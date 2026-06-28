@@ -184,3 +184,18 @@
     display: none;
   }
 }
+/* 自动播放被阻止时的提示动画 */
+@keyframes hintPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+  50% { transform: scale(1.15); box-shadow: 0 4px 20px rgba(180, 140, 80, 0.5); }
+}
+
+.vinyl-disc.hint-pulse {
+  animation: hintPulse 0.8s ease-in-out 3;
+}
+
+/* 播放图标在被阻止时更醒目 */
+.vinyl-disc.hint-pulse .vinyl-play-icon {
+  opacity: 1;
+  border-color: transparent transparent transparent rgba(255, 200, 100, 0.9);
+}

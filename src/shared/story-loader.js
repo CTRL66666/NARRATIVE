@@ -160,6 +160,19 @@ async function init() {
     sessionStorage.setItem('bgm_src', storyConfig.bgm);
   }
 
+  // 尝试自动播放（首页已预热音频）
+  if (bgm) {
+    bgm.play().catch(() => {
+      // 被浏览器阻止：给唱片添加提示动画
+      const disc = document.getElementById('vinylDisc');
+      if (disc) {
+        disc.classList.add('hint-pulse');
+        setTimeout(() => disc.classList.remove('hint-pulse'), 3000);
+      }
+      console.log('BGM 自动播放被浏览器阻止，请点击唱片播放');
+    });
+  }
+
   // 设置唱片标签
   const label = document.getElementById('vinylLabel');
   if (label) label.textContent = storyConfig.bgmLabel || storyConfig.title;

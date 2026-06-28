@@ -52,6 +52,10 @@ function initPageFlip() {
       e.preventDefault();
       const href = card.getAttribute('href');
 
+      // 音频预热：让浏览器记录用户交互，故事页可自动播放
+      const audio = new Audio();
+      audio.play().catch(() => {});
+
       if (pageFlipOverlay) {
         pageFlipOverlay.classList.add('active', 'flipping-out');
       }
