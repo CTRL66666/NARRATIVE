@@ -1,0 +1,486 @@
+/* ===== 共享组件 · 小说排版骨架 ===== */
+/* 所有故事页面共用的小说排版基础样式 */
+
+/* 页面容器 */
+.novel-page {
+  position: relative;
+  z-index: 2;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 20px 60px;
+}
+
+.novel-paper {
+  background: var(--paper-bg, #f7f2e8);
+  border-radius: 4px;
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.12),
+    0 8px 30px rgba(0,0,0,0.15),
+    inset 0 0 60px var(--paper-inset, rgba(139, 69, 19, 0.03));
+  position: relative;
+  overflow: hidden;
+  /* 纸张纹理 */
+  background-image:
+    linear-gradient(90deg, var(--paper-gutter-color, rgba(139,69,19,0.02)) 0%, transparent 3%),
+    linear-gradient(90deg, transparent 97%, var(--paper-gutter-color, rgba(139,69,19,0.02)) 100%),
+    url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paper)' opacity='0.03'/%3E%3C/svg%3E");
+}
+
+/* 书脊折痕 */
+.novel-gutter {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    var(--gutter-color, rgba(139, 69, 19, 0.06)) 10%,
+    var(--gutter-color, rgba(139, 69, 19, 0.08)) 50%,
+    var(--gutter-color, rgba(139, 69, 19, 0.06)) 90%,
+    transparent 100%
+  );
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* 小说头部 */
+.novel-header {
+  text-align: center;
+  padding: 60px 40px 40px;
+  border-bottom: 1px solid var(--divider-color, rgba(139, 69, 19, 0.1));
+}
+
+.novel-chapter-mark {
+  font-size: 0.85rem;
+  color: var(--chapter-color, #b8956a);
+  letter-spacing: 8px;
+  margin-bottom: 20px;
+  font-family: 'ZCOOL XiaoWei', 'ZCOOL KuaiLe', 'Orbitron', serif;
+}
+
+.novel-title {
+  font-family: 'ZCOOL XiaoWei', 'ZCOOL KuaiLe', 'Orbitron', serif;
+  font-size: 2.6rem;
+  color: var(--title-color, #5a3d28);
+  letter-spacing: 12px;
+  margin-bottom: 16px;
+  font-weight: 700;
+}
+
+.novel-author {
+  font-size: 0.95rem;
+  color: var(--author-color, #9a7a5a);
+  letter-spacing: 4px;
+  margin-bottom: 24px;
+}
+
+.novel-divider {
+  color: var(--divider-text-color, #c4a070);
+  font-size: 1.2rem;
+  letter-spacing: 4px;
+}
+
+/* 小说正文 */
+.novel-content {
+  padding: 40px 50px 60px;
+  font-size: var(--content-font-size, 1.15rem);
+  line-height: 2.6;
+  color: var(--text-color, #4a3a2a);
+}
+
+.novel-paragraph {
+  text-indent: 2em;
+  margin-bottom: 1.2em;
+  text-align: justify;
+  word-break: break-all;
+  opacity: 0;
+  transform: translateY(16px);
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+.novel-paragraph:nth-child(1) { animation-delay: 0.08s; }
+.novel-paragraph:nth-child(2) { animation-delay: 0.16s; }
+.novel-paragraph:nth-child(3) { animation-delay: 0.24s; }
+.novel-paragraph:nth-child(4) { animation-delay: 0.32s; }
+.novel-paragraph:nth-child(5) { animation-delay: 0.40s; }
+.novel-paragraph:nth-child(6) { animation-delay: 0.48s; }
+.novel-paragraph:nth-child(7) { animation-delay: 0.56s; }
+.novel-paragraph:nth-child(8) { animation-delay: 0.64s; }
+.novel-paragraph:nth-child(9) { animation-delay: 0.72s; }
+.novel-paragraph:nth-child(10) { animation-delay: 0.80s; }
+.novel-paragraph:nth-child(11) { animation-delay: 0.88s; }
+.novel-paragraph:nth-child(12) { animation-delay: 0.96s; }
+.novel-paragraph:nth-child(13) { animation-delay: 1.04s; }
+.novel-paragraph:nth-child(14) { animation-delay: 1.12s; }
+.novel-paragraph:nth-child(15) { animation-delay: 1.20s; }
+.novel-paragraph:nth-child(16) { animation-delay: 1.28s; }
+.novel-paragraph:nth-child(17) { animation-delay: 1.36s; }
+.novel-paragraph:nth-child(18) { animation-delay: 1.44s; }
+.novel-paragraph:nth-child(19) { animation-delay: 1.52s; }
+.novel-paragraph:nth-child(20) { animation-delay: 1.60s; }
+.novel-paragraph:nth-child(21) { animation-delay: 1.68s; }
+.novel-paragraph:nth-child(22) { animation-delay: 1.76s; }
+.novel-paragraph:nth-child(23) { animation-delay: 1.84s; }
+.novel-paragraph:nth-child(24) { animation-delay: 1.92s; }
+.novel-paragraph:nth-child(25) { animation-delay: 2.00s; }
+.novel-paragraph:nth-child(26) { animation-delay: 2.08s; }
+.novel-paragraph:nth-child(27) { animation-delay: 2.16s; }
+.novel-paragraph:nth-child(28) { animation-delay: 2.24s; }
+.novel-paragraph:nth-child(29) { animation-delay: 2.32s; }
+.novel-paragraph:nth-child(30) { animation-delay: 2.40s; }
+.novel-paragraph:nth-child(31) { animation-delay: 2.48s; }
+.novel-paragraph:nth-child(32) { animation-delay: 2.56s; }
+.novel-paragraph:nth-child(33) { animation-delay: 2.64s; }
+.novel-paragraph:nth-child(34) { animation-delay: 2.72s; }
+.novel-paragraph:nth-child(35) { animation-delay: 2.80s; }
+.novel-paragraph:nth-child(36) { animation-delay: 2.88s; }
+.novel-paragraph:nth-child(37) { animation-delay: 2.96s; }
+.novel-paragraph:nth-child(38) { animation-delay: 3.04s; }
+.novel-paragraph:nth-child(39) { animation-delay: 3.12s; }
+.novel-paragraph:nth-child(40) { animation-delay: 3.20s; }
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .novel-paragraph {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+}
+
+/* 引用块 */
+.novel-quote {
+  margin: 36px 30px;
+  padding: 28px 32px;
+  background: var(--quote-bg, rgba(139, 69, 19, 0.04));
+  border-left: 3px solid var(--quote-border, rgba(139, 69, 19, 0.25));
+  font-style: italic;
+  color: var(--quote-text, #6a4a30);
+  line-height: 2.4;
+  border-radius: 0 8px 8px 0;
+  text-indent: 0;
+  font-size: var(--quote-font-size, 1.05rem);
+}
+
+/* 结束标记 */
+.novel-end-mark {
+  text-align: center;
+  text-indent: 0;
+  margin-top: 50px;
+  padding-top: 40px;
+  border-top: 1px solid var(--divider-color, rgba(139, 69, 19, 0.1));
+  color: var(--endmark-color, #b8956a);
+  font-size: 0.95rem;
+  letter-spacing: 10px;
+  font-family: 'ZCOOL XiaoWei', 'ZCOOL KuaiLe', 'Orbitron', serif;
+}
+
+/* 底部导航 */
+.novel-nav-footer {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 40px 20px;
+  position: relative;
+  z-index: 2;
+}
+
+.novel-footer-btn {
+  padding: 12px 28px;
+  border-radius: 30px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+  transition: all 0.3s ease;
+  border: 1px solid var(--btn-border, rgba(139, 69, 19, 0.3));
+  color: var(--btn-color, #a08060);
+  background: var(--btn-bg, rgba(247, 242, 232, 0.9));
+  font-family: 'Noto Serif SC', 'Noto Sans SC', serif;
+}
+
+.novel-footer-btn:hover {
+  background: var(--btn-hover-bg, rgba(139, 69, 19, 0.08));
+  color: var(--btn-hover-color, #8a6030);
+  transform: translateY(-2px);
+}
+
+.novel-footer-btn.primary {
+  background: var(--btn-primary-bg, rgba(139, 69, 19, 0.15));
+  border-color: var(--btn-primary-border, rgba(180, 130, 80, 0.4));
+  color: var(--btn-primary-color, #8a6030);
+}
+
+.novel-footer-btn.primary:hover {
+  background: var(--btn-primary-hover-bg, rgba(139, 69, 19, 0.25));
+}
+
+/* ===== 评论区 ===== */
+.comments-section {
+  position: relative;
+  z-index: 2;
+  max-width: 720px;
+  margin: 40px auto 0;
+  padding: 0 20px 50px;
+}
+
+.comments-title {
+  font-family: 'ZCOOL XiaoWei', 'ZCOOL KuaiLe', 'Orbitron', serif;
+  font-size: 1.4rem;
+  color: var(--comments-title-color, #d4a574);
+  letter-spacing: 4px;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--comments-border, rgba(139, 69, 19, 0.15));
+}
+
+.comments-container {
+  min-height: 50px;
+}
+
+.comments-loading {
+  color: var(--comments-loading-color, #8a7050);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 16px;
+}
+
+.comment-item {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--comments-item-border, rgba(139, 69, 19, 0.08));
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.comment-author {
+  font-weight: 600;
+  color: var(--comment-author-color, #d4a574);
+  font-size: 0.9rem;
+}
+
+.comment-time {
+  font-size: 0.75rem;
+  color: var(--comment-time-color, #6a5a40);
+}
+
+.comment-body {
+  color: var(--comment-body-color, #a09070);
+  line-height: 1.7;
+  font-size: 0.9rem;
+}
+
+.comment-empty {
+  text-align: center;
+  color: var(--comment-empty-color, #6a5a40);
+  padding: 30px 0;
+  font-size: 0.9rem;
+}
+
+.comment-form {
+  margin-top: 30px;
+  padding: 24px;
+  background: var(--form-bg, rgba(139, 69, 19, 0.04));
+  border-radius: 12px;
+  border: 1px solid var(--form-border, rgba(139, 69, 19, 0.1));
+}
+
+.comment-form h3 {
+  font-family: 'ZCOOL XiaoWei', 'ZCOOL KuaiLe', 'Orbitron', serif;
+  font-size: 1.1rem;
+  color: var(--form-title-color, #d4a574);
+  letter-spacing: 2px;
+  margin-bottom: 16px;
+}
+
+.comment-form input,
+.comment-form textarea {
+  width: 100%;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  border: 1px solid var(--input-border, rgba(139, 69, 19, 0.2));
+  border-radius: 8px;
+  background: var(--input-bg, rgba(255, 255, 255, 0.6));
+  color: var(--input-text, #4a3a2a);
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: border-color 0.3s ease;
+}
+
+.comment-form input:focus,
+.comment-form textarea:focus {
+  outline: none;
+  border-color: var(--input-focus-border, rgba(180, 130, 80, 0.4));
+}
+
+.comment-form input::placeholder,
+.comment-form textarea::placeholder {
+  color: var(--input-placeholder, #a09070);
+}
+
+.comment-form-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.comment-tip {
+  font-size: 0.75rem;
+  color: var(--comment-tip-color, #8a7050);
+}
+
+.comment-submit {
+  padding: 8px 24px;
+  border-radius: 20px;
+  border: 1px solid var(--submit-border, rgba(180, 130, 80, 0.35));
+  background: var(--submit-bg, rgba(139, 69, 19, 0.15));
+  color: var(--submit-color, #8a6030);
+  font-family: inherit;
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.comment-submit:hover {
+  background: var(--submit-hover-bg, rgba(139, 69, 19, 0.3));
+  transform: translateY(-1px);
+}
+
+.comment-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 页脚 */
+.story-footer {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 30px 20px;
+  color: var(--footer-color, #5a4a30);
+  font-size: 0.8rem;
+  letter-spacing: 2px;
+  border-top: 1px solid var(--footer-border, rgba(139, 69, 19, 0.08));
+}
+
+/* ===== 响应式 ===== */
+
+/* 平板 */
+@media (max-width: 1024px) {
+  .novel-page {
+    padding: 30px 16px 50px;
+  }
+  .novel-header {
+    padding: 50px 30px 32px;
+  }
+  .novel-title {
+    font-size: 2.2rem;
+    letter-spacing: 8px;
+  }
+  .novel-content {
+    padding: 32px 40px 50px;
+  }
+}
+
+/* 手机 */
+@media (max-width: 768px) {
+  .novel-page {
+    padding: 20px 12px 40px;
+  }
+  .novel-paper {
+    border-radius: 3px;
+  }
+  .novel-header {
+    padding: 36px 20px 28px;
+  }
+  .novel-title {
+    font-size: 1.9rem;
+    letter-spacing: 6px;
+  }
+  .novel-author {
+    font-size: 0.85rem;
+  }
+  .novel-content {
+    padding: 24px 22px 40px;
+    font-size: var(--content-mobile-font-size, 1.05rem);
+    line-height: 2.4;
+  }
+  .novel-paragraph {
+    text-indent: 2em;
+    margin-bottom: 1em;
+  }
+  .novel-quote {
+    margin: 24px 10px;
+    padding: 20px 20px;
+    font-size: var(--quote-mobile-font-size, 0.95rem);
+  }
+  .novel-end-mark {
+    font-size: 0.85rem;
+    letter-spacing: 6px;
+  }
+
+  .novel-nav-footer {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 24px 16px;
+  }
+  .novel-footer-btn {
+    width: 100%;
+    text-align: center;
+    padding: 10px 20px;
+  }
+
+  .comments-section {
+    padding: 0 12px 30px;
+  }
+  .comments-title {
+    font-size: 1.2rem;
+  }
+  .comment-form {
+    padding: 18px;
+  }
+  .comment-form-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .comment-submit {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* 小手机 */
+@media (max-width: 400px) {
+  .novel-title {
+    font-size: 1.6rem;
+    letter-spacing: 4px;
+  }
+  .novel-content {
+    padding: 20px 16px 32px;
+    font-size: var(--content-small-font-size, 1rem);
+    line-height: 2.2;
+  }
+  .novel-quote {
+    padding: 16px 16px;
+  }
+}

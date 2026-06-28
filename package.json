@@ -1,0 +1,14 @@
+{
+  "name": "my-stories",
+  "version": "1.0.0",
+  "description": "个人故事集 - 沉浸式阅读体验展示站",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}

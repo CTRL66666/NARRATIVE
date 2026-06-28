@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的故事集 · 沉浸式阅读</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+  <!-- 翻页遮罩层 -->
+  <div class="page-flip-overlay" id="pageFlipOverlay">
+    <div class="page-flip-book">
+      <div class="page-flip-left"></div>
+      <div class="page-flip-right"></div>
+    </div>
+  </div>
+
+  <div class="bg-animation"></div>
+  
+  <header class="site-header">
+    <h1 class="site-title">我的故事集</h1>
+    <p class="site-subtitle">每一篇，都是一个世界</p>
+  </header>
+
+  <main class="bookshelf" id="bookshelf">
+    <!-- 书籍卡片由 home.js 从 config.json 动态渲染 -->
+  </main>
+
+  <footer class="site-footer">
+    <p> 我的故事集 · 用心讲述每一个故事</p>
+  </footer>
+
+  <script type="module" src="./src/shared/home.js"></script>
+</body>
+</html>

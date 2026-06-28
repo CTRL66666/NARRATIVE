@@ -1,0 +1,130 @@
+/* ===== 共享组件 · 导航栏 ===== */
+/* 所有故事页面共用的顶部导航栏 */
+
+.story-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 40px 14px 90px;
+  background: var(--nav-bg, rgba(26, 20, 16, 0.95));
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--nav-border, rgba(139, 69, 19, 0.15));
+}
+
+.nav-back, .nav-next {
+  color: var(--nav-link-color, #b8956a);
+  text-decoration: none;
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+  transition: all 0.3s ease;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-family: 'Noto Serif SC', 'Noto Sans SC', serif;
+  white-space: nowrap;
+}
+
+.nav-back:hover, .nav-next:hover {
+  color: var(--nav-link-hover, #d4a574);
+  background: var(--nav-link-hover-bg, rgba(139, 69, 19, 0.12));
+}
+
+.nav-center {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  justify-content: center;
+}
+
+.story-tag {
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  background: var(--tag-bg, rgba(139, 69, 19, 0.25));
+  color: var(--tag-color, #d4a574);
+  border: 1px solid var(--tag-border, rgba(212, 165, 116, 0.25));
+  font-family: 'Orbitron', monospace;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.story-nav-title {
+  font-family: 'ZCOOL XiaoWei', 'ZCOOL KuaiLe', 'Orbitron', serif;
+  font-size: 1.15rem;
+  color: var(--nav-title-color, #d4a574);
+  letter-spacing: 4px;
+  white-space: nowrap;
+}
+
+/* 章节下拉选择器 */
+.chapter-select {
+  display: none;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 6px 28px 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--tag-border, rgba(212, 165, 116, 0.25));
+  background: var(--tag-bg, rgba(139, 69, 19, 0.25));
+  color: var(--tag-color, #d4a574);
+  font-family: 'Noto Serif SC', 'Noto Sans SC', serif;
+  font-size: 0.85rem;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23d4a574' stroke-width='1.5' fill='none' fill-rule='evenodd'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+/* 章节列表 */
+.chapter-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  padding: 0 20px 24px;
+  margin-top: -10px;
+}
+
+.chapter-list a {
+  padding: 6px 14px;
+  border-radius: 16px;
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: all 0.3s ease;
+  border: 1px solid var(--chapter-link-border, rgba(139, 69, 19, 0.2));
+  color: var(--chapter-link-color, #a08060);
+  background: var(--chapter-link-bg, rgba(247, 242, 232, 0.6));
+}
+
+.chapter-list a:hover {
+  background: var(--chapter-link-hover-bg, rgba(139, 69, 19, 0.12));
+  color: var(--chapter-link-hover-color, #8a6030);
+}
+
+.chapter-list a.active {
+  background: var(--chapter-link-active-bg, rgba(139, 69, 19, 0.2));
+  color: var(--chapter-link-active-color, #8a6030);
+  border-color: var(--chapter-link-active-border, rgba(180, 130, 80, 0.4));
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .story-nav {
+    padding: 10px 16px 10px 64px;
+  }
+  .story-nav-title {
+    display: none;
+  }
+  .nav-back, .nav-next {
+    font-size: 0.85rem;
+    padding: 6px 12px;
+  }
+  .chapter-select {
+    display: block;
+  }
+  .chapter-list {
+    display: none;
+  }
+}

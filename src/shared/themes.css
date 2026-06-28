@@ -1,0 +1,514 @@
+/* ===== 预设主题系统 ===== */
+/* 通过 body[data-theme="xxx"] 切换主题，通过 body[data-chapter="N"] 切换章节色彩 */
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ========================================= */
+/* 主题一：古风 (ancient)                     */
+/* ========================================= */
+[data-theme="ancient"] {
+  background: #1a1410;
+  font-family: 'Noto Serif SC', 'STSong', 'SimSun', serif;
+
+  --paper-bg: #f7f2e8;
+  --paper-inset: rgba(139, 69, 19, 0.03);
+  --paper-gutter-color: rgba(139, 69, 19, 0.02);
+  --gutter-color: rgba(139, 69, 19, 0.08);
+  --divider-color: rgba(139, 69, 19, 0.1);
+  --divider-text-color: #c4a070;
+  --title-color: #5a3d28;
+  --author-color: #9a7a5a;
+  --chapter-color: #b8956a;
+  --text-color: #4a3a2a;
+  --quote-bg: rgba(139, 69, 19, 0.04);
+  --quote-border: rgba(139, 69, 19, 0.25);
+  --quote-text: #6a4a30;
+  --endmark-color: #b8956a;
+  --content-font-size: 1.15rem;
+  --content-mobile-font-size: 1.05rem;
+  --content-small-font-size: 1rem;
+  --quote-font-size: 1.05rem;
+  --quote-mobile-font-size: 0.95rem;
+
+  --btn-border: rgba(139, 69, 19, 0.3);
+  --btn-color: #a08060;
+  --btn-bg: rgba(247, 242, 232, 0.9);
+  --btn-hover-bg: rgba(139, 69, 19, 0.08);
+  --btn-hover-color: #8a6030;
+  --btn-primary-bg: rgba(139, 69, 19, 0.15);
+  --btn-primary-border: rgba(180, 130, 80, 0.4);
+  --btn-primary-color: #8a6030;
+  --btn-primary-hover-bg: rgba(139, 69, 19, 0.25);
+
+  --comments-title-color: #d4a574;
+  --comments-border: rgba(139, 69, 19, 0.15);
+  --comments-loading-color: #8a7050;
+  --comments-item-border: rgba(139, 69, 19, 0.08);
+  --comment-author-color: #d4a574;
+  --comment-time-color: #6a5a40;
+  --comment-body-color: #a09070;
+  --comment-empty-color: #6a5a40;
+  --form-bg: rgba(139, 69, 19, 0.04);
+  --form-border: rgba(139, 69, 19, 0.1);
+  --form-title-color: #d4a574;
+  --input-border: rgba(139, 69, 19, 0.2);
+  --input-bg: rgba(255, 255, 255, 0.6);
+  --input-text: #4a3a2a;
+  --input-focus-border: rgba(180, 130, 80, 0.4);
+  --input-placeholder: #a09070;
+  --comment-tip-color: #8a7050;
+  --submit-border: rgba(180, 130, 80, 0.35);
+  --submit-bg: rgba(139, 69, 19, 0.15);
+  --submit-color: #8a6030;
+  --submit-hover-bg: rgba(139, 69, 19, 0.3);
+
+  --nav-bg: rgba(26, 20, 16, 0.95);
+  --nav-border: rgba(139, 69, 19, 0.15);
+  --nav-link-color: #b8956a;
+  --nav-link-hover: #d4a574;
+  --nav-link-hover-bg: rgba(139, 69, 19, 0.12);
+  --nav-title-color: #d4a574;
+  --tag-bg: rgba(139, 69, 19, 0.25);
+  --tag-color: #d4a574;
+  --tag-border: rgba(212, 165, 116, 0.25);
+
+  --chapter-link-border: rgba(139, 69, 19, 0.2);
+  --chapter-link-color: #a08060;
+  --chapter-link-bg: rgba(247, 242, 232, 0.6);
+  --chapter-link-hover-bg: rgba(139, 69, 19, 0.12);
+  --chapter-link-hover-color: #8a6030;
+  --chapter-link-active-bg: rgba(139, 69, 19, 0.2);
+  --chapter-link-active-color: #8a6030;
+  --chapter-link-active-border: rgba(180, 130, 80, 0.4);
+
+  --footer-color: #5a4a30;
+  --footer-border: rgba(139, 69, 19, 0.08);
+
+  --vinyl-dark: #3d2818;
+  --vinyl-mid: #5a3d28;
+  --vinyl-label: #8b5a3a;
+  --vinyl-center: #a07050;
+  --vinyl-icon: rgba(255, 230, 200, 0.85);
+  --vinyl-text: rgba(255, 230, 200, 0.6);
+  --vinyl-hint: #b8956a;
+}
+
+[data-theme="ancient"][data-chapter="2"] {
+  --paper-bg: #faf5e0;
+  --title-color: #7a5a28;
+  --author-color: #aa9050;
+  --chapter-color: #c4a050;
+  --text-color: #5a4a20;
+  --quote-bg: rgba(180, 140, 60, 0.06);
+  --quote-border: rgba(180, 140, 60, 0.35);
+  --quote-text: #8a7030;
+  --endmark-color: #c4a050;
+  --vinyl-dark: #5a3d18;
+  --vinyl-mid: #7a5a28;
+  --vinyl-label: #a08040;
+  --vinyl-center: #c0a060;
+  --vinyl-icon: rgba(255, 240, 200, 0.9);
+  --vinyl-text: rgba(255, 240, 200, 0.65);
+  --vinyl-hint: #c4a050;
+}
+
+[data-theme="ancient"][data-chapter="3"] {
+  --paper-bg: #f0ece8;
+  --title-color: #3a3a4a;
+  --author-color: #7a7a8a;
+  --chapter-color: #8a8a9a;
+  --text-color: #3a3a4a;
+  --quote-bg: rgba(100, 100, 120, 0.04);
+  --quote-border: rgba(100, 100, 120, 0.25);
+  --quote-text: #5a5a6a;
+  --endmark-color: #8a8a9a;
+  --vinyl-dark: #2a2a38;
+  --vinyl-mid: #3a3a4a;
+  --vinyl-label: #5a5a6a;
+  --vinyl-center: #7a7a8a;
+  --vinyl-icon: rgba(200, 200, 220, 0.85);
+  --vinyl-text: rgba(200, 200, 220, 0.6);
+  --vinyl-hint: #8a8a9a;
+}
+
+/* ========================================= */
+/* 主题二：科幻 (scifi)                       */
+/* ========================================= */
+[data-theme="scifi"] {
+  background: #0a0a18;
+  font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+
+  --paper-bg: #0f1020;
+  --paper-inset: rgba(0, 100, 200, 0.03);
+  --paper-gutter-color: rgba(0, 150, 255, 0.02);
+  --gutter-color: rgba(0, 150, 255, 0.08);
+  --divider-color: rgba(0, 150, 255, 0.1);
+  --divider-text-color: #3a5a8a;
+  --title-color: #66ccff;
+  --author-color: #557799;
+  --chapter-color: #557799;
+  --text-color: #a0b8c8;
+  --quote-bg: rgba(0, 100, 200, 0.06);
+  --quote-border: rgba(0, 150, 255, 0.4);
+  --quote-text: #66ccff;
+  --endmark-color: #557799;
+  --content-font-size: 1.1rem;
+  --content-mobile-font-size: 1rem;
+  --content-small-font-size: 0.95rem;
+  --quote-font-size: 0.95rem;
+  --quote-mobile-font-size: 0.85rem;
+
+  --btn-border: rgba(0, 150, 255, 0.3);
+  --btn-color: #5599cc;
+  --btn-bg: rgba(10, 10, 24, 0.9);
+  --btn-hover-bg: rgba(0, 100, 200, 0.15);
+  --btn-hover-color: #66ccff;
+  --btn-primary-bg: rgba(0, 100, 200, 0.25);
+  --btn-primary-border: rgba(102, 204, 255, 0.4);
+  --btn-primary-color: #66ccff;
+  --btn-primary-hover-bg: rgba(0, 100, 200, 0.4);
+
+  --comments-title-color: #66ccff;
+  --comments-border: rgba(0, 150, 255, 0.15);
+  --comments-loading-color: #557799;
+  --comments-item-border: rgba(0, 150, 255, 0.08);
+  --comment-author-color: #66ccff;
+  --comment-time-color: #446688;
+  --comment-body-color: #90a8b8;
+  --comment-empty-color: #446688;
+  --form-bg: rgba(0, 100, 200, 0.04);
+  --form-border: rgba(0, 150, 255, 0.1);
+  --form-title-color: #66ccff;
+  --input-border: rgba(0, 150, 255, 0.2);
+  --input-bg: rgba(15, 16, 32, 0.6);
+  --input-text: #c0d0e0;
+  --input-focus-border: rgba(102, 204, 255, 0.5);
+  --input-placeholder: #446688;
+  --comment-tip-color: #446688;
+  --submit-border: rgba(102, 204, 255, 0.35);
+  --submit-bg: rgba(0, 100, 200, 0.25);
+  --submit-color: #66ccff;
+  --submit-hover-bg: rgba(0, 100, 200, 0.4);
+
+  --nav-bg: rgba(10, 10, 24, 0.95);
+  --nav-border: rgba(0, 150, 255, 0.15);
+  --nav-link-color: #5599cc;
+  --nav-link-hover: #66ccff;
+  --nav-link-hover-bg: rgba(0, 100, 200, 0.12);
+  --nav-title-color: #66ccff;
+  --tag-bg: rgba(0, 100, 200, 0.25);
+  --tag-color: #66ccff;
+  --tag-border: rgba(102, 204, 255, 0.25);
+
+  --chapter-link-border: rgba(0, 150, 255, 0.2);
+  --chapter-link-color: #5599cc;
+  --chapter-link-bg: rgba(15, 16, 32, 0.6);
+  --chapter-link-hover-bg: rgba(0, 100, 200, 0.15);
+  --chapter-link-hover-color: #66ccff;
+  --chapter-link-active-bg: rgba(0, 100, 200, 0.25);
+  --chapter-link-active-color: #66ccff;
+  --chapter-link-active-border: rgba(102, 204, 255, 0.4);
+
+  --footer-color: #334466;
+  --footer-border: rgba(0, 150, 255, 0.08);
+
+  --vinyl-dark: #1a1a3a;
+  --vinyl-mid: #2a2a5a;
+  --vinyl-label: #3a5a8a;
+  --vinyl-center: #5a7aaa;
+  --vinyl-icon: rgba(150, 200, 255, 0.85);
+  --vinyl-text: rgba(150, 200, 255, 0.5);
+  --vinyl-hint: #5599cc;
+}
+
+[data-theme="scifi"][data-chapter="2"] {
+  --paper-bg: #120f22;
+  --title-color: #cc88ff;
+  --author-color: #7a5aaa;
+  --chapter-color: #7a5aaa;
+  --text-color: #b0a0c8;
+  --quote-bg: rgba(100, 50, 180, 0.08);
+  --quote-border: rgba(150, 80, 220, 0.45);
+  --quote-text: #cc88ff;
+  --endmark-color: #7a5aaa;
+  --vinyl-dark: #2a1a4a;
+  --vinyl-mid: #3a2a6a;
+  --vinyl-label: #5a3a8a;
+  --vinyl-center: #7a5aaa;
+  --vinyl-icon: rgba(200, 150, 255, 0.85);
+  --vinyl-text: rgba(200, 150, 255, 0.5);
+  --vinyl-hint: #7a5aaa;
+}
+
+[data-theme="scifi"][data-chapter="3"] {
+  --paper-bg: #0a1810;
+  --title-color: #44ddaa;
+  --author-color: #3a7a5a;
+  --chapter-color: #3a7a5a;
+  --text-color: #90c8a0;
+  --quote-bg: rgba(0, 180, 120, 0.08);
+  --quote-border: rgba(0, 220, 160, 0.45);
+  --quote-text: #44ddaa;
+  --endmark-color: #3a7a5a;
+  --vinyl-dark: #1a2a1a;
+  --vinyl-mid: #2a3a2a;
+  --vinyl-label: #3a5a3a;
+  --vinyl-center: #5a7a5a;
+  --vinyl-icon: rgba(100, 255, 180, 0.85);
+  --vinyl-text: rgba(100, 255, 180, 0.5);
+  --vinyl-hint: #3a7a5a;
+}
+
+/* ========================================= */
+/* 主题三：治愈 (healing)                     */
+/* ========================================= */
+[data-theme="healing"] {
+  background: #1e2a1a;
+  font-family: 'Noto Serif SC', 'STSong', 'SimSun', serif;
+
+  --paper-bg: #faf8f3;
+  --paper-inset: rgba(140, 180, 100, 0.02);
+  --paper-gutter-color: rgba(140, 180, 100, 0.015);
+  --gutter-color: rgba(140, 180, 100, 0.07);
+  --divider-color: rgba(140, 180, 100, 0.12);
+  --divider-text-color: #aadd88;
+  --title-color: #5a7a3a;
+  --author-color: #9aaa7a;
+  --chapter-color: #7a8a5a;
+  --text-color: #5a5040;
+  --quote-bg: rgba(140, 180, 100, 0.04);
+  --quote-border: rgba(140, 180, 100, 0.3);
+  --quote-text: #6a8050;
+  --endmark-color: #9aaa7a;
+  --content-font-size: 1.15rem;
+  --content-mobile-font-size: 1.05rem;
+  --content-small-font-size: 1rem;
+  --quote-font-size: 1.05rem;
+  --quote-mobile-font-size: 0.95rem;
+
+  --btn-border: rgba(140, 180, 100, 0.3);
+  --btn-color: #7a8a5a;
+  --btn-bg: rgba(250, 248, 243, 0.95);
+  --btn-hover-bg: rgba(140, 180, 100, 0.12);
+  --btn-hover-color: #5a7a3a;
+  --btn-primary-bg: rgba(140, 180, 100, 0.25);
+  --btn-primary-border: rgba(140, 180, 100, 0.4);
+  --btn-primary-color: #5a7a3a;
+  --btn-primary-hover-bg: rgba(140, 180, 100, 0.4);
+
+  --comments-title-color: #5a7a3a;
+  --comments-border: rgba(140, 180, 100, 0.15);
+  --comments-loading-color: #9aaa7a;
+  --comments-item-border: rgba(140, 180, 100, 0.08);
+  --comment-author-color: #5a7a3a;
+  --comment-time-color: #aaa888;
+  --comment-body-color: #8a8060;
+  --comment-empty-color: #aaa888;
+  --form-bg: rgba(140, 180, 100, 0.04);
+  --form-border: rgba(140, 180, 100, 0.1);
+  --form-title-color: #5a7a3a;
+  --input-border: rgba(140, 180, 100, 0.2);
+  --input-bg: rgba(255, 255, 255, 0.6);
+  --input-text: #5a5040;
+  --input-focus-border: rgba(140, 180, 100, 0.5);
+  --input-placeholder: #aaa888;
+  --comment-tip-color: #aaa888;
+  --submit-border: rgba(140, 180, 100, 0.35);
+  --submit-bg: rgba(140, 180, 100, 0.25);
+  --submit-color: #5a7a3a;
+  --submit-hover-bg: rgba(140, 180, 100, 0.4);
+
+  --nav-bg: rgba(30, 42, 26, 0.95);
+  --nav-border: rgba(140, 180, 100, 0.15);
+  --nav-link-color: #7a8a5a;
+  --nav-link-hover: #5a7a3a;
+  --nav-link-hover-bg: rgba(140, 180, 100, 0.1);
+  --nav-title-color: #5a7a3a;
+  --tag-bg: rgba(140, 180, 100, 0.25);
+  --tag-color: #5a7a3a;
+  --tag-border: rgba(140, 180, 100, 0.25);
+
+  --chapter-link-border: rgba(140, 180, 100, 0.2);
+  --chapter-link-color: #7a8a5a;
+  --chapter-link-bg: rgba(250, 248, 243, 0.6);
+  --chapter-link-hover-bg: rgba(140, 180, 100, 0.12);
+  --chapter-link-hover-color: #5a7a3a;
+  --chapter-link-active-bg: rgba(140, 180, 100, 0.25);
+  --chapter-link-active-color: #5a7a3a;
+  --chapter-link-active-border: rgba(140, 180, 100, 0.4);
+
+  --footer-color: #aaa888;
+  --footer-border: rgba(140, 180, 100, 0.08);
+
+  --vinyl-dark: #3a5a2a;
+  --vinyl-mid: #4a7a3a;
+  --vinyl-label: #6a9a5a;
+  --vinyl-center: #8aba7a;
+  --vinyl-icon: rgba(255, 255, 240, 0.85);
+  --vinyl-text: rgba(255, 255, 240, 0.5);
+  --vinyl-hint: #aadd88;
+}
+
+[data-theme="healing"][data-chapter="2"] {
+  --paper-bg: #fdf5e8;
+  --title-color: #7a5a2a;
+  --author-color: #aa9060;
+  --chapter-color: #8a7040;
+  --text-color: #5a4a30;
+  --quote-bg: rgba(200, 140, 80, 0.04);
+  --quote-border: rgba(200, 140, 80, 0.3);
+  --quote-text: #8a6030;
+  --endmark-color: #aa9060;
+  --vinyl-dark: #5a3a18;
+  --vinyl-mid: #7a4a28;
+  --vinyl-label: #a06030;
+  --vinyl-center: #c08040;
+  --vinyl-icon: rgba(255, 220, 180, 0.85);
+  --vinyl-text: rgba(255, 220, 180, 0.5);
+  --vinyl-hint: #c4a060;
+}
+
+[data-theme="healing"][data-chapter="3"] {
+  --paper-bg: #fdf0f0;
+  --title-color: #7a3a3a;
+  --author-color: #aa7070;
+  --chapter-color: #8a5a5a;
+  --text-color: #5a3a3a;
+  --quote-bg: rgba(200, 120, 120, 0.04);
+  --quote-border: rgba(200, 120, 120, 0.3);
+  --quote-text: #8a4040;
+  --endmark-color: #aa7070;
+  --vinyl-dark: #5a2a2a;
+  --vinyl-mid: #7a3a3a;
+  --vinyl-label: #a04040;
+  --vinyl-center: #c06060;
+  --vinyl-icon: rgba(255, 200, 200, 0.85);
+  --vinyl-text: rgba(255, 200, 200, 0.5);
+  --vinyl-hint: #c48080;
+}
+
+/* ========================================= */
+/* 通用背景效果                               */
+/* ========================================= */
+
+/* 噪点纹理 */
+.bg-effect {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 0; opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* 雨效果 */
+.rain-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 1; opacity: 0.03;
+  background: repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(180, 180, 200, 0.3) 2px, rgba(180, 180, 200, 0.3) 3px);
+  animation: rainFall 0.8s linear infinite;
+}
+@keyframes rainFall {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+/* 星空背景 */
+.stars-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 0;
+  background: #0a0a18;
+  background-image:
+    radial-gradient(1.5px 1.5px at 20px 30px, rgba(200, 200, 255, 0.8), transparent),
+    radial-gradient(1px 1px at 50px 80px, rgba(150, 200, 255, 0.6), transparent),
+    radial-gradient(1.5px 1.5px at 90px 40px, rgba(200, 200, 255, 0.7), transparent),
+    radial-gradient(1px 1px at 130px 120px, rgba(180, 220, 255, 0.5), transparent),
+    radial-gradient(1.5px 1.5px at 170px 60px, rgba(200, 200, 255, 0.6), transparent),
+    radial-gradient(2px 2px at 200px 150px, rgba(150, 200, 255, 0.4), transparent),
+    radial-gradient(1px 1px at 250px 20px, rgba(200, 200, 255, 0.7), transparent),
+    radial-gradient(1.5px 1.5px at 300px 90px, rgba(180, 220, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 340px 140px, rgba(200, 200, 255, 0.6), transparent),
+    radial-gradient(2px 2px at 380px 50px, rgba(150, 200, 255, 0.4), transparent),
+    radial-gradient(1.5px 1.5px at 420px 110px, rgba(200, 200, 255, 0.7), transparent),
+    radial-gradient(1px 1px at 480px 70px, rgba(180, 220, 255, 0.5), transparent),
+    radial-gradient(1.5px 1.5px at 520px 160px, rgba(200, 200, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 560px 30px, rgba(150, 200, 255, 0.5), transparent),
+    radial-gradient(2px 2px at 600px 130px, rgba(200, 200, 255, 0.4), transparent);
+  animation: twinkle 4s ease-in-out infinite alternate;
+}
+@keyframes twinkle {
+  0% { opacity: 0.8; } 50% { opacity: 1; } 100% { opacity: 0.7; }
+}
+
+/* 扫描线 */
+.scan-lines {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 1; opacity: 0.03;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 200, 255, 0.3) 2px, rgba(0, 200, 255, 0.3) 4px);
+}
+
+/* Glitch 效果标题（仅科幻） */
+[data-theme="scifi"] .novel-title {
+  position: relative;
+  text-shadow: 0 0 20px rgba(102, 204, 255, 0.4);
+}
+[data-theme="scifi"] .novel-title::before,
+[data-theme="scifi"] .novel-title::after {
+  content: attr(data-text);
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+}
+[data-theme="scifi"] .novel-title::before {
+  color: #ff3366;
+  animation: glitch-1 3s infinite linear alternate-reverse;
+  clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+  opacity: 0.8;
+}
+[data-theme="scifi"] .novel-title::after {
+  color: #00ffcc;
+  animation: glitch-2 2s infinite linear alternate-reverse;
+  clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+  opacity: 0.8;
+}
+@keyframes glitch-1 {
+  0% { transform: translate(0); } 20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(-2px, -2px); } 60% { transform: translate(2px, 2px); }
+  80% { transform: translate(2px, -2px); } 100% { transform: translate(0); }
+}
+@keyframes glitch-2 {
+  0% { transform: translate(0); } 20% { transform: translate(2px, -2px); }
+  40% { transform: translate(2px, 2px); } 60% { transform: translate(-2px, -2px); }
+  80% { transform: translate(-2px, 2px); } 100% { transform: translate(0); }
+}
+
+/* 阳光背景 */
+.sunlight-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 0; opacity: 0.5;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255, 220, 150, 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 60%, rgba(200, 240, 180, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(255, 200, 150, 0.15) 0%, transparent 40%);
+  animation: sunlightShift 15s ease-in-out infinite alternate;
+}
+@keyframes sunlightShift {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(10px, -10px) rotate(1deg); }
+  100% { transform: translate(-5px, 5px) rotate(-0.5deg); }
+}
+
+/* 树叶遮罩 */
+.leaf-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 1; opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5 Q40 20 30 35 Q20 20 30 5Z' fill='%234a7a3a' opacity='0.5'/%3E%3C/svg%3E");
+  background-size: 80px 80px;
+}
+
+/* 小屏幕关闭 glitch */
+@media (max-width: 768px) {
+  [data-theme="scifi"] .novel-title::before,
+  [data-theme="scifi"] .novel-title::after {
+    display: none;
+  }
+}

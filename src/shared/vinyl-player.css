@@ -1,0 +1,186 @@
+/* ===== 共享组件 · 唱片播放器 ===== */
+/* 每个故事页面在左上角引用此样式，并通过 CSS 变量定制颜色 */
+
+.vinyl-player {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vinyl-disc {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  /* 唱片纹理 */
+  background: conic-gradient(
+    from 0deg,
+    var(--vinyl-dark, #333) 0deg,
+    var(--vinyl-mid, #444) 15deg,
+    var(--vinyl-dark, #333) 30deg,
+    var(--vinyl-mid, #444) 45deg,
+    var(--vinyl-dark, #333) 60deg,
+    var(--vinyl-mid, #444) 75deg,
+    var(--vinyl-dark, #333) 90deg,
+    var(--vinyl-mid, #444) 105deg,
+    var(--vinyl-dark, #333) 120deg,
+    var(--vinyl-mid, #444) 135deg,
+    var(--vinyl-dark, #333) 150deg,
+    var(--vinyl-mid, #444) 165deg,
+    var(--vinyl-dark, #333) 180deg,
+    var(--vinyl-mid, #444) 195deg,
+    var(--vinyl-dark, #333) 210deg,
+    var(--vinyl-mid, #444) 225deg,
+    var(--vinyl-dark, #333) 240deg,
+    var(--vinyl-mid, #444) 255deg,
+    var(--vinyl-dark, #333) 270deg,
+    var(--vinyl-mid, #444) 285deg,
+    var(--vinyl-dark, #333) 300deg,
+    var(--vinyl-mid, #444) 315deg,
+    var(--vinyl-dark, #333) 330deg,
+    var(--vinyl-mid, #444) 345deg,
+    var(--vinyl-dark, #333) 360deg
+  );
+}
+
+.vinyl-disc::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--vinyl-label, #666);
+  z-index: 2;
+}
+
+.vinyl-disc::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--vinyl-center, #888);
+  z-index: 3;
+}
+
+/* 播放图标 */
+.vinyl-play-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 4;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 6px 0 6px 10px;
+  border-color: transparent transparent transparent var(--vinyl-icon, rgba(255,255,255,0.8));
+  transition: opacity 0.3s ease;
+  opacity: 0.7;
+}
+
+.vinyl-disc:hover .vinyl-play-icon {
+  opacity: 1;
+}
+
+.vinyl-disc.playing .vinyl-play-icon {
+  display: none;
+}
+
+/* 暂停图标 */
+.vinyl-pause-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 4;
+  display: none;
+  gap: 2px;
+  align-items: center;
+}
+
+.vinyl-disc.playing .vinyl-pause-icon {
+  display: flex;
+}
+
+.vinyl-pause-icon span {
+  display: block;
+  width: 3px;
+  height: 10px;
+  background: var(--vinyl-icon, rgba(255,255,255,0.8));
+  border-radius: 1px;
+}
+
+/* 旋转动画 */
+@keyframes vinylSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.vinyl-disc.playing {
+  animation: vinylSpin 3s linear infinite;
+}
+
+/* 唱片标签文字 */
+.vinyl-label-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  font-size: 5px;
+  letter-spacing: 1px;
+  color: var(--vinyl-text, rgba(255,255,255,0.5));
+  white-space: nowrap;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* 音乐提示文字 */
+.vinyl-hint {
+  font-size: 0.75rem;
+  color: var(--vinyl-hint, #888);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  white-space: nowrap;
+  letter-spacing: 1px;
+}
+
+.vinyl-player:hover .vinyl-hint {
+  opacity: 1;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .vinyl-player {
+    top: 12px;
+    left: 12px;
+  }
+  .vinyl-disc {
+    width: 44px;
+    height: 44px;
+  }
+  .vinyl-disc::before {
+    width: 14px;
+    height: 14px;
+  }
+  .vinyl-disc::after {
+    width: 5px;
+    height: 5px;
+  }
+  .vinyl-hint {
+    display: none;
+  }
+}
