@@ -1,5 +1,6 @@
 // ===== 统一故事加载器 =====
 // 通过 URL ?id=xxx 加载任意故事，无需为每个故事创建独立文件
+// 同一故事内翻页不刷新页面，保持 BGM 无缝连续
 
 import config from '../stories/config.json';
 import { initVinylPlayer } from './vinyl-player.js';
@@ -62,6 +63,58 @@ function renderBackgroundEffect(effect) {
   }
 }
 
+function setupChapterNavigation(data) {
+  // 监听所有章节切换按钮的点击
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action="chapter"]');
+    if (!btn) return;
+    
+    const targetStoryId = btn.dataset.story;
+    const targetIndex = parseInt(btn.dataset.index);
+    
+    if (targetStoryId !== storyId) {
+      // 不是当前故事，让默认跳转处理
+      return;
+    }
+    
+    // 同一故事内翻页：阻止默认行为，无刷新切换
+    e.preventDefault();
+    
+    // 更新 URL（不刷新页面）
+    const url = new URL(window.location.href);
+    url.searchParams.set('ch', targetIndex);
+    history.pushState({ chapter: targetIndex }, '', url);
+    
+    // 重新渲染内容（不触碰 BGM）
+    renderStory(data, storyId, targetIndex);
+  });
+  
+  // 监听移动端下拉选择器
+  document.addEventListener('change', (e) => {
+    if (!e.target.matches('[data-action="chapter-select"]')) return;
+    
+    const targetStoryId = e.target.dataset.story;
+    const targetIndex = parseInt(e.target.value);
+    
+    if (targetStoryId !== storyId) return;
+    
+    e.preventDefault();
+    
+    const url = new URL(window.location.href);
+    url.searchParams.set('ch', targetIndex);
+    history.pushState({ chapter: targetIndex }, '', url);
+    
+    renderStory(data, storyId, targetIndex);
+  });
+  
+  // 浏览器后退/前进按钮支持
+  window.addEventListener('popstate', (e) => {
+    const newParams = new URLSearchParams(window.location.search);
+    const newIndex = parseInt(newParams.get('ch')) || 0;
+    renderStory(data, storyId, newIndex);
+  });
+}
+
 async function init() {
   const data = await loadStoryData();
 
@@ -87,14 +140,13 @@ async function init() {
     const wasPlaying = sessionStorage.getItem('bgm_playing') === 'true';
 
     if (savedSrc === storyConfig.bgm) {
-      // 同一故事内换页：恢复进度
+      // 同一故事内返回/刷新：恢复进度
       bgm.src = storyConfig.bgm;
       function onCanplay() {
         bgm.currentTime = savedTime;
         if (wasPlaying) bgm.play().catch(() => {});
       }
       bgm.addEventListener('canplay', onCanplay, { once: true });
-      // 如果已经可播放，直接恢复
       if (bgm.readyState >= 3) {
         onCanplay();
       }
@@ -125,8 +177,12 @@ async function init() {
   // 渲染背景效果
   renderBackgroundEffect(storyConfig.backgroundEffect);
 
-  // 渲染故事内容
-  renderStory(data, storyId);
+  // 渲染初始章节
+  const initialChapter = parseInt(params.get('ch')) || 0;
+  renderStory(data, storyId, initialChapter);
+  
+  // 设置章节导航（无刷新切换）
+  setupChapterNavigation(data);
 
   // 初始化唱片播放器
   initVinylPlayer('vinylDisc', 'bgm');

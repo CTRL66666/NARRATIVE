@@ -197,6 +197,13 @@
   z-index: 2;
 }
 
+button.novel-footer-btn {
+  cursor: pointer;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 .novel-footer-btn {
   padding: 12px 28px;
   border-radius: 30px;

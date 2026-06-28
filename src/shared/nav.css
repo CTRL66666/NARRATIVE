@@ -87,7 +87,8 @@
   margin-top: -10px;
 }
 
-.chapter-list a {
+.chapter-list a,
+.chapter-list button {
   padding: 6px 14px;
   border-radius: 16px;
   text-decoration: none;
@@ -96,14 +97,18 @@
   border: 1px solid var(--chapter-link-border, rgba(139, 69, 19, 0.2));
   color: var(--chapter-link-color, #a08060);
   background: var(--chapter-link-bg, rgba(247, 242, 232, 0.6));
+  font-family: inherit;
+  cursor: pointer;
 }
 
-.chapter-list a:hover {
+.chapter-list a:hover,
+.chapter-list button:hover {
   background: var(--chapter-link-hover-bg, rgba(139, 69, 19, 0.12));
   color: var(--chapter-link-hover-color, #8a6030);
 }
 
-.chapter-list a.active {
+.chapter-list a.active,
+.chapter-list button.active {
   background: var(--chapter-link-active-bg, rgba(139, 69, 19, 0.2));
   color: var(--chapter-link-active-color, #8a6030);
   border-color: var(--chapter-link-active-border, rgba(180, 130, 80, 0.4));

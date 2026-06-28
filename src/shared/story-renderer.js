@@ -1,10 +1,8 @@
 // ===== 共享模块 · 故事渲染器 =====
 // 从传入的数据对象渲染故事内容，支持多章节
+// 同一故事内翻页不刷新页面，保持 BGM 无缝连续
 
-export function renderStory(data, storyId) {
-  // 获取 URL 中的章节参数
-  const params = new URLSearchParams(window.location.search);
-  let chapterIndex = parseInt(params.get('ch')) || 0;
+export function renderStory(data, storyId, chapterIndex = 0) {
   if (chapterIndex < 0) chapterIndex = 0;
   if (chapterIndex >= data.chapters.length) chapterIndex = data.chapters.length - 1;
   
@@ -24,7 +22,10 @@ export function renderStory(data, storyId) {
   // 渲染底部导航
   renderFooterNav(data, chapterIndex, storyId);
   
-  return data;
+  // 滚动到顶部
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  
+  return chapterIndex;
 }
 
 function renderHeader(data, chapter, chapterIndex) {
@@ -44,16 +45,16 @@ function renderHeader(data, chapter, chapterIndex) {
 }
 
 function renderChapterNav(data, currentIndex, storyId) {
-  if (data.chapters.length <= 1) return;
-  
   // 清除旧的章节导航（防止重复）
   document.querySelectorAll('.chapter-list, .chapter-select').forEach(el => el.remove());
+  
+  if (data.chapters.length <= 1) return;
   
   // 桌面端：章节列表
   let listHtml = '<div class="chapter-list">';
   data.chapters.forEach((ch, i) => {
     const active = i === currentIndex ? 'active' : '';
-    listHtml += `<a href="./story.html?id=${storyId}&ch=${i}" class="${active}">${ch.title || `第${i+1}章`}</a>`;
+    listHtml += `<button class="${active}" data-action="chapter" data-index="${i}" data-story="${storyId}">${ch.title || `第${i+1}章`}</button>`;
   });
   listHtml += '</div>';
   
@@ -65,10 +66,10 @@ function renderChapterNav(data, currentIndex, storyId) {
   // 移动端：下拉选择器
   const navCenter = document.querySelector('.nav-center');
   if (navCenter) {
-    let selectHtml = '<select class="chapter-select" onchange="window.location.href=this.value">';
+    let selectHtml = `<select class="chapter-select" data-action="chapter-select" data-story="${storyId}">`;
     data.chapters.forEach((ch, i) => {
       const selected = i === currentIndex ? 'selected' : '';
-      selectHtml += `<option value="./story.html?id=${storyId}&ch=${i}" ${selected}>${ch.title || `第${i+1}章`}</option>`;
+      selectHtml += `<option value="${i}" ${selected}>${ch.title || `第${i+1}章`}</option>`;
     });
     selectHtml += '</select>';
     navCenter.insertAdjacentHTML('beforeend', selectHtml);
@@ -103,13 +104,13 @@ function renderFooterNav(data, currentIndex, storyId) {
   let html = '';
   
   if (currentIndex > 0) {
-    html += `<a href="./story.html?id=${storyId}&ch=${currentIndex - 1}" class="novel-footer-btn">← ${chapters[currentIndex - 1].title || `第${currentIndex}章`}</a>`;
+    html += `<button class="novel-footer-btn" data-action="chapter" data-index="${currentIndex - 1}" data-story="${storyId}">← ${chapters[currentIndex - 1].title || `第${currentIndex}章`}</button>`;
   } else {
     html += `<a href="./index.html" class="novel-footer-btn">← 返回书架</a>`;
   }
   
   if (currentIndex < chapters.length - 1) {
-    html += `<a href="./story.html?id=${storyId}&ch=${currentIndex + 1}" class="novel-footer-btn primary">${chapters[currentIndex + 1].title || `第${currentIndex + 2}章`} →</a>`;
+    html += `<button class="novel-footer-btn primary" data-action="chapter" data-index="${currentIndex + 1}" data-story="${storyId}">${chapters[currentIndex + 1].title || `第${currentIndex + 2}章`} →</button>`;
   } else if (data.nextStory) {
     html += `<a href="./story.html?id=${data.nextStory}" class="novel-footer-btn primary">下一篇：${data.nextStoryTitle} →</a>`;
   } else {
