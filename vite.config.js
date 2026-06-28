@@ -9,10 +9,8 @@ const pages = {
 };
 
 // 支持通过环境变量配置 base 路径
-// 本地双击打开：'./'（相对路径）
-// 部署到服务器根目录：'/'（绝对路径）
-// GitHub Pages 项目页：'/repo-name/'
-const base = process.env.VITE_BASE_URL || './';
+// 使用相对路径，适配任何部署环境
+const base = './';
 
 export default defineConfig({
   base: base,
