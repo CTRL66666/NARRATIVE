@@ -53,7 +53,7 @@ function renderChapterNav(data, currentIndex, storyId) {
   let listHtml = '<div class="chapter-list">';
   data.chapters.forEach((ch, i) => {
     const active = i === currentIndex ? 'active' : '';
-    listHtml += `<a href="./?id=${storyId}&ch=${i}" class="${active}">${ch.title || `第${i+1}章`}</a>`;
+    listHtml += `<a href="./story.html?id=${storyId}&ch=${i}" class="${active}">${ch.title || `第${i+1}章`}</a>`;
   });
   listHtml += '</div>';
   
@@ -68,7 +68,7 @@ function renderChapterNav(data, currentIndex, storyId) {
     let selectHtml = '<select class="chapter-select" onchange="window.location.href=this.value">';
     data.chapters.forEach((ch, i) => {
       const selected = i === currentIndex ? 'selected' : '';
-      selectHtml += `<option value="./?id=${storyId}&ch=${i}" ${selected}>${ch.title || `第${i+1}章`}</option>`;
+      selectHtml += `<option value="./story.html?id=${storyId}&ch=${i}" ${selected}>${ch.title || `第${i+1}章`}</option>`;
     });
     selectHtml += '</select>';
     navCenter.insertAdjacentHTML('beforeend', selectHtml);
@@ -103,15 +103,15 @@ function renderFooterNav(data, currentIndex, storyId) {
   let html = '';
   
   if (currentIndex > 0) {
-    html += `<a href="./?id=${storyId}&ch=${currentIndex - 1}" class="novel-footer-btn">← ${chapters[currentIndex - 1].title || `第${currentIndex}章`}</a>`;
+    html += `<a href="./story.html?id=${storyId}&ch=${currentIndex - 1}" class="novel-footer-btn">← ${chapters[currentIndex - 1].title || `第${currentIndex}章`}</a>`;
   } else {
     html += `<a href="./index.html" class="novel-footer-btn">← 返回书架</a>`;
   }
   
   if (currentIndex < chapters.length - 1) {
-    html += `<a href="./?id=${storyId}&ch=${currentIndex + 1}" class="novel-footer-btn primary">${chapters[currentIndex + 1].title || `第${currentIndex + 2}章`} →</a>`;
+    html += `<a href="./story.html?id=${storyId}&ch=${currentIndex + 1}" class="novel-footer-btn primary">${chapters[currentIndex + 1].title || `第${currentIndex + 2}章`} →</a>`;
   } else if (data.nextStory) {
-    html += `<a href="./?id=${data.nextStory}" class="novel-footer-btn primary">下一篇：${data.nextStoryTitle} →</a>`;
+    html += `<a href="./story.html?id=${data.nextStory}" class="novel-footer-btn primary">下一篇：${data.nextStoryTitle} →</a>`;
   } else {
     html += `<a href="./index.html" class="novel-footer-btn primary">返回书架 →</a>`;
   }

@@ -82,7 +82,30 @@ async function init() {
   // 设置 BGM
   const bgm = document.getElementById('bgm');
   if (bgm && storyConfig.bgm) {
-    bgm.src = storyConfig.bgm;
+    const savedSrc = sessionStorage.getItem('bgm_src');
+    const savedTime = parseFloat(sessionStorage.getItem('bgm_time') || '0');
+    const wasPlaying = sessionStorage.getItem('bgm_playing') === 'true';
+
+    if (savedSrc === storyConfig.bgm) {
+      // 同一故事内换页：恢复进度
+      bgm.src = storyConfig.bgm;
+      function onCanplay() {
+        bgm.currentTime = savedTime;
+        if (wasPlaying) bgm.play().catch(() => {});
+      }
+      bgm.addEventListener('canplay', onCanplay, { once: true });
+      // 如果已经可播放，直接恢复
+      if (bgm.readyState >= 3) {
+        onCanplay();
+      }
+    } else {
+      // 换了故事：从头开始，清除旧进度
+      sessionStorage.removeItem('bgm_time');
+      sessionStorage.removeItem('bgm_playing');
+      bgm.src = storyConfig.bgm;
+    }
+
+    sessionStorage.setItem('bgm_src', storyConfig.bgm);
   }
 
   // 设置唱片标签
