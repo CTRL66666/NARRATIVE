@@ -117,17 +117,21 @@
 /* 响应式 */
 @media (max-width: 768px) {
   .story-nav {
-    padding: 10px 16px 10px 64px;
+    padding: 8px 10px 8px 56px;
+    overflow: hidden;
   }
   .story-nav-title {
     display: none;
   }
   .nav-back, .nav-next {
-    font-size: 0.85rem;
-    padding: 6px 12px;
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    letter-spacing: 1px;
   }
   .chapter-select {
     display: block;
+    padding: 4px 18px 4px 8px;
+    font-size: 0.8rem;
   }
   .chapter-list {
     display: none;

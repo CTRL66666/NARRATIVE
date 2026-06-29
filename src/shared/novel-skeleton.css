@@ -215,6 +215,7 @@ button.novel-footer-btn {
   color: var(--btn-color, #a08060);
   background: var(--btn-bg, rgba(247, 242, 232, 0.9));
   font-family: 'Noto Serif SC', 'Noto Sans SC', serif;
+  box-sizing: border-box;
 }
 
 .novel-footer-btn:hover {
@@ -417,7 +418,7 @@ button.novel-footer-btn {
 
 /* 手机 */
 @media (max-width: 768px) {
-  body {
+  html, body {
     overflow-x: hidden;
   }
   .novel-page {
