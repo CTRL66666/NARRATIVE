@@ -4,6 +4,32 @@
 
 ---
 
+## 2026-06-29 — v1.0.6 评论功能修复：零门槛本地存储
+
+### 问题现象
+1. **评论显示"找不到对应的故事"**：`getCurrentStory()` 通过 `pathname` 检测（如 `story1.html`），但当前页面是 `story.html?id=story1`，pathname 里没有 `story1`。
+2. **需要 GitHub 登录才能评论**：`submitComment` 需要 GitHub token，普通用户门槛太高。
+
+### 根本原因
+1. `getCurrentStory()` 使用 `window.location.pathname.includes('story1')` 匹配，但统一模板后 URL 变成了 `story.html?id=story1`，pathname 中不含故事 ID。
+2. 评论写入依赖 GitHub API（`POST /repos/{owner}/{repo}/issues/{number}/comments`），需要 token 认证。
+
+### 修复方案
+1. **读取故事 ID**：改为从 URL 参数读取：`new URLSearchParams(window.location.search).get('id')`
+2. **评论存储改为 localStorage**：
+   - 读取：`localStorage.getItem('narrative-comments-{storyId}')`
+   - 写入：`localStorage.setItem('narrative-comments-{storyId}', JSON.stringify(comments))`
+   - 格式：`{name, text, time, source: 'local'}`
+3. **保留 GitHub 读取（可选）**：向后兼容，如果配置了 `STORY_ISSUE_MAP`，仍从 GitHub Issues 读取公开评论并合并显示。
+4. **区分来源**：本地评论显示 `(本地)` 标签，GitHub 评论不显示标签。
+
+### 注意事项
+- localStorage 评论**仅在当前设备可见**，换设备/浏览器会丢失。
+- 如果需要跨设备同步，后续可以添加"导出评论"或"同步到 GitHub"功能。
+- 评论按时间排序，GitHub 评论和本地评论合并显示。
+
+---
+
 ## 2026-06-29 — v1.0.5 移动端导航栏溢出修复
 
 ### 问题现象
