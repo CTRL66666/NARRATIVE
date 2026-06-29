@@ -2,6 +2,7 @@
 window.__bgmUserPaused = false;
 window.__userInteracted = false;
 window.__audioContext = null;
+window.__bgmPlayed = false; // 标记是否已成功播放
 
 // 环境检测
 const isWeixin = /MicroMessenger/i.test(navigator.userAgent);
@@ -28,11 +29,13 @@ function initWebAudio(bgm) {
 window.__playBgm = () => {
   const bgm = document.getElementById('bgm');
   if (!bgm || window.__bgmUserPaused || !bgm.src) return;
+  if (window.__bgmPlayed) return; // 已经播放成功，不再重复
 
   // Android 微信：先恢复 AudioContext，再播放
   if (isAndroidWeixin && window.__audioContext) {
     window.__audioContext.resume().then(() => {
       bgm.play().then(() => {
+        window.__bgmPlayed = true;
         sessionStorage.setItem('bgm_playing', 'true');
       }).catch(() => {});
     }).catch(() => {});
@@ -41,28 +44,49 @@ window.__playBgm = () => {
 
   // 其他环境：直接播放
   bgm.play().then(() => {
+    window.__bgmPlayed = true;
     sessionStorage.setItem('bgm_playing', 'true');
   }).catch(() => {});
 };
 
 // 立即绑定全局事件监听器（不等待 init() 异步加载）
-document.addEventListener('touchstart', function onTouch() {
-  window.__userInteracted = true;
-  window.__playBgm();
-  document.removeEventListener('touchstart', onTouch);
-}, { once: true });
+// 不设置 once: true，持续监听直到播放成功
+function onUserInteraction(e) {
+  if (window.__bgmPlayed || window.__bgmUserPaused) return;
 
-document.addEventListener('click', function onClick() {
   window.__userInteracted = true;
-  window.__playBgm();
-  document.removeEventListener('click', onClick);
-}, { once: true });
 
-window.addEventListener('scroll', function onScroll() {
-  window.__userInteracted = true;
+  // Android 微信：用户交互时立即创建 AudioContext 并尝试恢复
+  if (isAndroidWeixin) {
+    const bgm = document.getElementById('bgm');
+    if (bgm && !window.__audioContext) {
+      initWebAudio(bgm);
+    }
+    if (window.__audioContext) {
+      window.__audioContext.resume().catch(() => {});
+    }
+  }
+
+  // 尝试播放（如果 bgm.src 已设置则播放，否则等待）
   window.__playBgm();
-  window.removeEventListener('scroll', onScroll);
-}, { once: true, passive: true });
+
+  // 如果 bgm.src 还没设置，持续监听
+  const bgm = document.getElementById('bgm');
+  if (!bgm || !bgm.src) return;
+
+  // 播放成功，移除所有监听器
+  if (window.__bgmPlayed) {
+    document.removeEventListener('touchstart', onUserInteraction);
+    document.removeEventListener('click', onUserInteraction);
+    window.removeEventListener('scroll', onUserInteraction);
+    document.removeEventListener('touchmove', onUserInteraction);
+  }
+}
+
+document.addEventListener('touchstart', onUserInteraction, { passive: true });
+document.addEventListener('click', onUserInteraction);
+window.addEventListener('scroll', onUserInteraction, { passive: true });
+document.addEventListener('touchmove', onUserInteraction, { passive: true });
 
 import config from '../stories/config.json';
 import { initVinylPlayer } from './vinyl-player.js';
@@ -386,6 +410,10 @@ async function init() {
       sessionStorage.removeItem('bgm_time');
       sessionStorage.removeItem('bgm_playing');
       bgm.src = storyConfig.bgm;
+      // 新故事也绑定 canplay，音频加载完成后尝试播放
+      bgm.addEventListener('canplay', function onNewStoryCanplay() {
+        window.__playBgm();
+      }, { once: true });
     }
 
     sessionStorage.setItem('bgm_src', storyConfig.bgm);
@@ -439,7 +467,7 @@ async function init() {
   // 注入版本号
   const versionMark = document.querySelector('.version-mark');
   if (versionMark) {
-    versionMark.textContent = 'v1.0.11';
+    versionMark.textContent = 'v1.0.12';
   }
 }
 
