@@ -329,17 +329,38 @@ async function init() {
     sessionStorage.setItem('bgm_src', storyConfig.bgm);
   }
 
-  // 尝试自动播放（首页已预热音频）
+  // 尝试自动播放（首页已预热音频，微信需要特殊处理）
   if (bgm) {
-    bgm.play().catch(() => {
-      // 被浏览器阻止：给唱片添加提示动画
-      const disc = document.getElementById('vinylDisc');
-      if (disc) {
-        disc.classList.add('hint-pulse');
-        setTimeout(() => disc.classList.remove('hint-pulse'), 3000);
-      }
-      console.log('BGM 自动播放被浏览器阻止，请点击唱片播放');
-    });
+    const isWeixin = /MicroMessenger/i.test(navigator.userAgent);
+    
+    if (isWeixin && typeof WeixinJSBridge !== 'undefined') {
+      // 微信环境：通过 WeixinJSBridge 触发播放
+      WeixinJSBridge.invoke('getNetworkType', {}, () => {
+        bgm.play().catch(() => {
+          console.log('微信 BGM 自动播放被阻止');
+        });
+      });
+    } else if (isWeixin) {
+      // 等待 WeixinJSBridge 就绪
+      document.addEventListener('WeixinJSBridgeReady', () => {
+        WeixinJSBridge.invoke('getNetworkType', {}, () => {
+          bgm.play().catch(() => {
+            console.log('微信 BGM 自动播放被阻止');
+          });
+        });
+      }, { once: true });
+    } else {
+      // 非微信环境：直接尝试播放
+      bgm.play().catch(() => {
+        // 被浏览器阻止：给唱片添加提示动画
+        const disc = document.getElementById('vinylDisc');
+        if (disc) {
+          disc.classList.add('hint-pulse');
+          setTimeout(() => disc.classList.remove('hint-pulse'), 3000);
+        }
+        console.log('BGM 自动播放被浏览器阻止，请点击唱片播放');
+      });
+    }
   }
 
   // 设置唱片标签
@@ -371,6 +392,12 @@ async function init() {
 
   // 初始化评论
   initComments();
+  
+  // 注入版本号
+  const versionMark = document.querySelector('.version-mark');
+  if (versionMark) {
+    versionMark.textContent = 'v1.0.8';
+  }
 }
 
 init().catch(err => {
