@@ -96,6 +96,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // 注入版本号
   const versionMark = document.querySelector('.version-mark');
   if (versionMark) {
-    versionMark.textContent = 'v1.0.8';
+    versionMark.textContent = 'v1.0.9';
   }
 });

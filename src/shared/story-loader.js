@@ -329,39 +329,50 @@ async function init() {
     sessionStorage.setItem('bgm_src', storyConfig.bgm);
   }
 
-  // 尝试自动播放 + 兜底：用户首次交互触发
+  // 尝试自动播放 + 多层兜底
   if (bgm) {
     const isWeixin = /MicroMessenger/i.test(navigator.userAgent);
     const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
-    let hasPlayed = false;
 
-    const tryPlay = () => {
-      if (hasPlayed) return;
-      hasPlayed = true;
+    const tryPlay = (source) => {
+      // 用户手动暂停过，不再自动触发
+      if (window.__bgmUserPaused) return;
       bgm.play().then(() => {
         sessionStorage.setItem('bgm_playing', 'true');
+        console.log(`BGM 通过 ${source} 播放成功`);
       }).catch(() => {
-        console.log('BGM 播放被阻止');
+        console.log(`BGM ${source} 播放被阻止`);
       });
     };
 
+    // 第一层：WeixinJSBridge（微信环境）
     if (isWeixin && typeof WeixinJSBridge !== 'undefined') {
-      // 微信：WeixinJSBridge 就绪后立即尝试
-      WeixinJSBridge.invoke('getNetworkType', {}, tryPlay);
+      WeixinJSBridge.invoke('getNetworkType', {}, () => tryPlay('WeixinJSBridge'));
     } else if (isWeixin) {
       document.addEventListener('WeixinJSBridgeReady', () => {
-        WeixinJSBridge.invoke('getNetworkType', {}, tryPlay);
+        WeixinJSBridge.invoke('getNetworkType', {}, () => tryPlay('WeixinJSBridge'));
       }, { once: true });
     }
 
-    // 通用兜底：页面首次交互（点击/触摸）时播放
-    // 这对所有移动端浏览器都有效，包括微信
+    // 第二层：用户首次点击/触摸
     const userInteractionEvents = ['click', 'touchstart', 'touchend'];
     const onFirstInteraction = () => {
-      tryPlay();
+      tryPlay('click');
       userInteractionEvents.forEach(e => document.removeEventListener(e, onFirstInteraction));
     };
     userInteractionEvents.forEach(e => document.addEventListener(e, onFirstInteraction, { once: true }));
+
+    // 第三层：用户首次滚动/滑动（兜底）
+    let scrollTriggered = false;
+    const onFirstScroll = () => {
+      if (scrollTriggered) return;
+      scrollTriggered = true;
+      tryPlay('scroll');
+      window.removeEventListener('scroll', onFirstScroll);
+      document.removeEventListener('touchmove', onFirstScroll);
+    };
+    window.addEventListener('scroll', onFirstScroll, { passive: true });
+    document.addEventListener('touchmove', onFirstScroll, { passive: true });
 
     // 桌面端直接尝试
     if (!isWeixin && !isMobile) {
@@ -408,7 +419,7 @@ async function init() {
   // 注入版本号
   const versionMark = document.querySelector('.version-mark');
   if (versionMark) {
-    versionMark.textContent = 'v1.0.8';
+    versionMark.textContent = 'v1.0.9';
   }
 }
 

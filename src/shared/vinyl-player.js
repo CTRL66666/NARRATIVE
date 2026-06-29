@@ -32,8 +32,12 @@ export function initVinylPlayer(discId, audioId) {
       bgm.play().catch(err => {
         console.log('音乐播放失败:', err);
       });
+      // 用户主动播放，清除暂停标记
+      window.__bgmUserPaused = false;
     } else {
       bgm.pause();
+      // 用户手动暂停，标记不再自动触发
+      window.__bgmUserPaused = true;
     }
   });
 
