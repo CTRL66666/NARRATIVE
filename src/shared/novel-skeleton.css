@@ -389,6 +389,13 @@ button.novel-footer-btn {
   border-top: 1px solid var(--footer-border, rgba(139, 69, 19, 0.08));
 }
 
+.version-mark {
+  font-size: 0.7rem;
+  opacity: 0.6;
+  margin-top: 4px;
+  font-family: monospace;
+}
+
 /* ===== 响应式 ===== */
 
 /* 平板 */

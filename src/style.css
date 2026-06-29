@@ -364,3 +364,12 @@ body {
   .book-cover { height: 240px; }
   .book-front { padding: 20px; }
 }
+
+/* 版本号 */
+.version-mark {
+  font-size: 0.75rem;
+  opacity: 0.5;
+  margin-top: 6px;
+  font-family: monospace;
+  color: var(--version-color, #b8956a);
+}
