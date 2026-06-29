@@ -273,8 +273,7 @@ function initComments() {
     if (result.success) {
       textInput.value = '';
       if (nameInput) nameInput.value = '';
-      const comments = await loadAllComments(storyId);
-      renderComments(comments, container);
+      renderComments(await loadAllComments(storyId), container);
     } else {
       alert(`评论失败：${result.error}`);
     }
