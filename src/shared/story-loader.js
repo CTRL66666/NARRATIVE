@@ -1,10 +1,45 @@
 // 全局音频播放控制（必须在 init() 之前定义，确保用户交互能被捕获）
 window.__bgmUserPaused = false;
 window.__userInteracted = false;
+window.__audioContext = null;
 
-window.__tryPlayBgm = () => {
+// 环境检测
+const isWeixin = /MicroMessenger/i.test(navigator.userAgent);
+const isAndroid = /Android/i.test(navigator.userAgent);
+const isAndroidWeixin = isWeixin && isAndroid;
+const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+const isMobile = isAndroid || isIOS;
+
+// 初始化 Web Audio API（Android 微信需要）
+function initWebAudio(bgm) {
+  if (isAndroidWeixin && !window.__audioContext && bgm) {
+    try {
+      window.__audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const source = window.__audioContext.createMediaElementSource(bgm);
+      source.connect(window.__audioContext.destination);
+      console.log('Web Audio 初始化成功（Android 微信）');
+    } catch (e) {
+      console.error('Web Audio 初始化失败:', e);
+    }
+  }
+}
+
+// 统一播放函数（所有环境通用）
+window.__playBgm = () => {
   const bgm = document.getElementById('bgm');
   if (!bgm || window.__bgmUserPaused || !bgm.src) return;
+
+  // Android 微信：先恢复 AudioContext，再播放
+  if (isAndroidWeixin && window.__audioContext) {
+    window.__audioContext.resume().then(() => {
+      bgm.play().then(() => {
+        sessionStorage.setItem('bgm_playing', 'true');
+      }).catch(() => {});
+    }).catch(() => {});
+    return;
+  }
+
+  // 其他环境：直接播放
   bgm.play().then(() => {
     sessionStorage.setItem('bgm_playing', 'true');
   }).catch(() => {});
@@ -13,21 +48,23 @@ window.__tryPlayBgm = () => {
 // 立即绑定全局事件监听器（不等待 init() 异步加载）
 document.addEventListener('touchstart', function onTouch() {
   window.__userInteracted = true;
-  window.__tryPlayBgm();
+  window.__playBgm();
   document.removeEventListener('touchstart', onTouch);
 }, { once: true });
 
 document.addEventListener('click', function onClick() {
   window.__userInteracted = true;
-  window.__tryPlayBgm();
+  window.__playBgm();
   document.removeEventListener('click', onClick);
 }, { once: true });
 
 window.addEventListener('scroll', function onScroll() {
   window.__userInteracted = true;
-  window.__tryPlayBgm();
+  window.__playBgm();
   window.removeEventListener('scroll', onScroll);
 }, { once: true, passive: true });
+
+import config from '../stories/config.json';
 import { initVinylPlayer } from './vinyl-player.js';
 import { renderStory } from './story-renderer.js';
 
@@ -338,7 +375,7 @@ async function init() {
       bgm.src = storyConfig.bgm;
       function onCanplay() {
         bgm.currentTime = savedTime;
-        if (wasPlaying) bgm.play().catch(() => {});
+        if (wasPlaying) window.__playBgm();
       }
       bgm.addEventListener('canplay', onCanplay, { once: true });
       if (bgm.readyState >= 3) {
@@ -353,22 +390,19 @@ async function init() {
 
     sessionStorage.setItem('bgm_src', storyConfig.bgm);
 
-    // 如果用户已经交互过，立即尝试播放
-    if (window.__userInteracted) {
-      window.__tryPlayBgm();
+    // Android 微信：初始化 Web Audio
+    if (isAndroidWeixin) {
+      initWebAudio(bgm);
     }
 
-    // 尝试自动播放（桌面端）
-    const isWeixin = /MicroMessenger/i.test(navigator.userAgent);
-    const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+    // 如果用户已经交互过，立即尝试播放
+    if (window.__userInteracted) {
+      window.__playBgm();
+    }
+
+    // 桌面端直接尝试
     if (!isWeixin && !isMobile) {
-      bgm.play().catch(() => {
-        const disc = document.getElementById('vinylDisc');
-        if (disc) {
-          disc.classList.add('hint-pulse');
-          setTimeout(() => disc.classList.remove('hint-pulse'), 3000);
-        }
-      });
+      window.__playBgm();
     }
   }
 
@@ -405,7 +439,7 @@ async function init() {
   // 注入版本号
   const versionMark = document.querySelector('.version-mark');
   if (versionMark) {
-    versionMark.textContent = 'v1.0.10';
+    versionMark.textContent = 'v1.0.11';
   }
 }
 

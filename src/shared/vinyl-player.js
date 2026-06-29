@@ -1,5 +1,6 @@
 // ===== 共享模块 · 唱片播放器 =====
 // 所有故事页面共用，只需传入 DOM 元素 ID
+// 支持 Android 微信（Web Audio API）和普通浏览器（<audio> 元素）
 
 export function initVinylPlayer(discId, audioId) {
   const vinylDisc = document.getElementById(discId);
@@ -29,9 +30,20 @@ export function initVinylPlayer(discId, audioId) {
       if (savedTime > 0 && bgm.currentTime === 0) {
         bgm.currentTime = savedTime;
       }
-      bgm.play().catch(err => {
-        console.log('音乐播放失败:', err);
-      });
+
+      // Android 微信：先恢复 AudioContext，再播放
+      if (window.__audioContext) {
+        window.__audioContext.resume().then(() => {
+          bgm.play().catch(err => {
+            console.log('音乐播放失败:', err);
+          });
+        }).catch(() => {});
+      } else {
+        bgm.play().catch(err => {
+          console.log('音乐播放失败:', err);
+        });
+      }
+
       // 用户主动播放，清除暂停标记
       window.__bgmUserPaused = false;
     } else {
