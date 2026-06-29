@@ -90,73 +90,6 @@
   color: var(--text-color, #4a3a2a);
 }
 
-/* 移动端适配 */
-@media (max-width: 768px) {
-  body {
-    overflow-x: hidden;
-  }
-
-  .novel-page {
-    padding: 20px 0px 40px;
-    max-width: 100%;
-  }
-
-  .novel-paper {
-    border-radius: 0;
-    box-shadow: none;
-  }
-
-  .novel-header {
-    padding: 40px 16px 30px;
-  }
-
-  .novel-chapter-mark {
-    letter-spacing: 4px;
-    font-size: 0.8rem;
-  }
-
-  .novel-title {
-    font-size: 1.8rem;
-    letter-spacing: 4px;
-  }
-
-  .novel-author {
-    letter-spacing: 2px;
-    font-size: 0.85rem;
-  }
-
-  .novel-content {
-    padding: 30px 20px 40px;
-    font-size: 1.05rem;
-    line-height: 2.4;
-  }
-
-  .novel-paragraph {
-    text-indent: 1.5em;
-  }
-
-  .novel-footer-btn {
-    padding: 10px 20px;
-    font-size: 0.85rem;
-  }
-
-  .novel-nav-footer {
-    padding: 20px 10px;
-    gap: 8px;
-  }
-
-  .chapter-list {
-    padding: 0 12px;
-    margin-bottom: 20px;
-  }
-
-  .chapter-list a,
-  .chapter-list button {
-    padding: 5px 12px;
-    font-size: 0.8rem;
-  }
-}
-
 .novel-paragraph {
   text-indent: 2em;
   margin-bottom: 1.2em;
@@ -477,14 +410,23 @@ button.novel-footer-btn {
 
 /* 手机 */
 @media (max-width: 768px) {
+  body {
+    overflow-x: hidden;
+  }
   .novel-page {
-    padding: 20px 12px 40px;
+    padding: 20px 0px 40px;
+    max-width: 100%;
   }
   .novel-paper {
-    border-radius: 3px;
+    border-radius: 0;
+    box-shadow: none;
   }
   .novel-header {
     padding: 36px 20px 28px;
+  }
+  .novel-chapter-mark {
+    letter-spacing: 4px;
+    font-size: 0.8rem;
   }
   .novel-title {
     font-size: 1.9rem;
@@ -494,12 +436,12 @@ button.novel-footer-btn {
     font-size: 0.85rem;
   }
   .novel-content {
-    padding: 24px 22px 40px;
+    padding: 24px 20px 40px;
     font-size: var(--content-mobile-font-size, 1.05rem);
     line-height: 2.4;
   }
   .novel-paragraph {
-    text-indent: 2em;
+    text-indent: 1.5em;
     margin-bottom: 1em;
   }
   .novel-quote {
