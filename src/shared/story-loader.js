@@ -1,8 +1,33 @@
-// ===== 统一故事加载器 =====
-// 通过 URL ?id=xxx 加载任意故事，无需为每个故事创建独立文件
-// 同一故事内翻页不刷新页面，保持 BGM 无缝连续
+// 全局音频播放控制（必须在 init() 之前定义，确保用户交互能被捕获）
+window.__bgmUserPaused = false;
+window.__userInteracted = false;
 
-import config from '../stories/config.json';
+window.__tryPlayBgm = () => {
+  const bgm = document.getElementById('bgm');
+  if (!bgm || window.__bgmUserPaused || !bgm.src) return;
+  bgm.play().then(() => {
+    sessionStorage.setItem('bgm_playing', 'true');
+  }).catch(() => {});
+};
+
+// 立即绑定全局事件监听器（不等待 init() 异步加载）
+document.addEventListener('touchstart', function onTouch() {
+  window.__userInteracted = true;
+  window.__tryPlayBgm();
+  document.removeEventListener('touchstart', onTouch);
+}, { once: true });
+
+document.addEventListener('click', function onClick() {
+  window.__userInteracted = true;
+  window.__tryPlayBgm();
+  document.removeEventListener('click', onClick);
+}, { once: true });
+
+window.addEventListener('scroll', function onScroll() {
+  window.__userInteracted = true;
+  window.__tryPlayBgm();
+  window.removeEventListener('scroll', onScroll);
+}, { once: true, passive: true });
 import { initVinylPlayer } from './vinyl-player.js';
 import { renderStory } from './story-renderer.js';
 
@@ -327,54 +352,15 @@ async function init() {
     }
 
     sessionStorage.setItem('bgm_src', storyConfig.bgm);
-  }
 
-  // 尝试自动播放 + 多层兜底
-  if (bgm) {
-    const isWeixin = /MicroMessenger/i.test(navigator.userAgent);
-    const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
-
-    const tryPlay = (source) => {
-      // 用户手动暂停过，不再自动触发
-      if (window.__bgmUserPaused) return;
-      bgm.play().then(() => {
-        sessionStorage.setItem('bgm_playing', 'true');
-        console.log(`BGM 通过 ${source} 播放成功`);
-      }).catch(() => {
-        console.log(`BGM ${source} 播放被阻止`);
-      });
-    };
-
-    // 第一层：WeixinJSBridge（微信环境）
-    if (isWeixin && typeof WeixinJSBridge !== 'undefined') {
-      WeixinJSBridge.invoke('getNetworkType', {}, () => tryPlay('WeixinJSBridge'));
-    } else if (isWeixin) {
-      document.addEventListener('WeixinJSBridgeReady', () => {
-        WeixinJSBridge.invoke('getNetworkType', {}, () => tryPlay('WeixinJSBridge'));
-      }, { once: true });
+    // 如果用户已经交互过，立即尝试播放
+    if (window.__userInteracted) {
+      window.__tryPlayBgm();
     }
 
-    // 第二层：用户首次点击/触摸
-    const userInteractionEvents = ['click', 'touchstart', 'touchend'];
-    const onFirstInteraction = () => {
-      tryPlay('click');
-      userInteractionEvents.forEach(e => document.removeEventListener(e, onFirstInteraction));
-    };
-    userInteractionEvents.forEach(e => document.addEventListener(e, onFirstInteraction, { once: true }));
-
-    // 第三层：用户首次滚动/滑动（兜底）
-    let scrollTriggered = false;
-    const onFirstScroll = () => {
-      if (scrollTriggered) return;
-      scrollTriggered = true;
-      tryPlay('scroll');
-      window.removeEventListener('scroll', onFirstScroll);
-      document.removeEventListener('touchmove', onFirstScroll);
-    };
-    window.addEventListener('scroll', onFirstScroll, { passive: true });
-    document.addEventListener('touchmove', onFirstScroll, { passive: true });
-
-    // 桌面端直接尝试
+    // 尝试自动播放（桌面端）
+    const isWeixin = /MicroMessenger/i.test(navigator.userAgent);
+    const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
     if (!isWeixin && !isMobile) {
       bgm.play().catch(() => {
         const disc = document.getElementById('vinylDisc');
@@ -419,7 +405,7 @@ async function init() {
   // 注入版本号
   const versionMark = document.querySelector('.version-mark');
   if (versionMark) {
-    versionMark.textContent = 'v1.0.9';
+    versionMark.textContent = 'v1.0.10';
   }
 }
 
