@@ -329,36 +329,48 @@ async function init() {
     sessionStorage.setItem('bgm_src', storyConfig.bgm);
   }
 
-  // 尝试自动播放（首页已预热音频，微信需要特殊处理）
+  // 尝试自动播放 + 兜底：用户首次交互触发
   if (bgm) {
     const isWeixin = /MicroMessenger/i.test(navigator.userAgent);
-    
-    if (isWeixin && typeof WeixinJSBridge !== 'undefined') {
-      // 微信环境：通过 WeixinJSBridge 触发播放
-      WeixinJSBridge.invoke('getNetworkType', {}, () => {
-        bgm.play().catch(() => {
-          console.log('微信 BGM 自动播放被阻止');
-        });
+    const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+    let hasPlayed = false;
+
+    const tryPlay = () => {
+      if (hasPlayed) return;
+      hasPlayed = true;
+      bgm.play().then(() => {
+        sessionStorage.setItem('bgm_playing', 'true');
+      }).catch(() => {
+        console.log('BGM 播放被阻止');
       });
+    };
+
+    if (isWeixin && typeof WeixinJSBridge !== 'undefined') {
+      // 微信：WeixinJSBridge 就绪后立即尝试
+      WeixinJSBridge.invoke('getNetworkType', {}, tryPlay);
     } else if (isWeixin) {
-      // 等待 WeixinJSBridge 就绪
       document.addEventListener('WeixinJSBridgeReady', () => {
-        WeixinJSBridge.invoke('getNetworkType', {}, () => {
-          bgm.play().catch(() => {
-            console.log('微信 BGM 自动播放被阻止');
-          });
-        });
+        WeixinJSBridge.invoke('getNetworkType', {}, tryPlay);
       }, { once: true });
-    } else {
-      // 非微信环境：直接尝试播放
+    }
+
+    // 通用兜底：页面首次交互（点击/触摸）时播放
+    // 这对所有移动端浏览器都有效，包括微信
+    const userInteractionEvents = ['click', 'touchstart', 'touchend'];
+    const onFirstInteraction = () => {
+      tryPlay();
+      userInteractionEvents.forEach(e => document.removeEventListener(e, onFirstInteraction));
+    };
+    userInteractionEvents.forEach(e => document.addEventListener(e, onFirstInteraction, { once: true }));
+
+    // 桌面端直接尝试
+    if (!isWeixin && !isMobile) {
       bgm.play().catch(() => {
-        // 被浏览器阻止：给唱片添加提示动画
         const disc = document.getElementById('vinylDisc');
         if (disc) {
           disc.classList.add('hint-pulse');
           setTimeout(() => disc.classList.remove('hint-pulse'), 3000);
         }
-        console.log('BGM 自动播放被浏览器阻止，请点击唱片播放');
       });
     }
   }
