@@ -1,93 +1,97 @@
-/* ===== 共享评论模块 ===== */
+/* ===== 共享评论模块 =====
+ * 支持两种存储模式：
+ * 1. 本地模式（默认）：评论存储在 localStorage，无需账号，零门槛
+ * 2. GitHub 模式（可选）：评论同步到 GitHub Issues，需要配置
+ */
 
-// 评论存储方案：使用 GitHub Issues 作为"后端"
-// 每个故事对应一个 Issue，评论内容存储在 Issue 评论中
-// 通过 GitHub API 读取和写入
+const GITHUB_OWNER = 'CTRL66666';
+const GITHUB_REPO = 'NARRATIVE';
 
-const GITHUB_OWNER = 'YOUR_GITHUB_USERNAME';  // 替换为你的 GitHub 用户名
-const GITHUB_REPO = 'my-stories';               // 替换为你的仓库名
-const GITHUB_TOKEN = ''; // 如需写入评论，需要配置 token（建议使用 GitHub Apps 或 OAuth）
-
-// 故事对应的 Issue 编号映射（预先在仓库中创建好 Issue）
+// 故事对应的 Issue 编号映射（可选配置）
 const STORY_ISSUE_MAP = {
-  'story1': 1,  // 长安夜雨
-  'story2': 2,  // 深空信标
-  'story3': 3,  // 夏日蝉鸣
+  'story1': 1,
+  'story2': 2,
+  'story3': 3,
 };
 
-// 获取当前故事标识
+// ===== 获取当前故事 ID =====
 function getCurrentStory() {
-  const path = window.location.pathname;
-  if (path.includes('story1')) return 'story1';
-  if (path.includes('story2')) return 'story2';
-  if (path.includes('story3')) return 'story3';
-  return null;
-}
-
-// 从 URL 参数读取 GitHub 配置（便于本地测试和自定义）
-function getGithubConfig() {
   const params = new URLSearchParams(window.location.search);
-  return {
-    owner: params.get('owner') || GITHUB_OWNER,
-    repo: params.get('repo') || GITHUB_REPO,
-  };
+  return params.get('id');
 }
 
-// 加载评论
-async function loadComments() {
-  const story = getCurrentStory();
-  if (!story) return;
+// ===== 获取当前故事章节（用于显示）=====
+function getCurrentChapter() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('ch') || '1';
+}
 
-  const container = document.getElementById('commentsContainer');
-  if (!container) return;
-
-  const issueNumber = STORY_ISSUE_MAP[story];
-  const { owner, repo } = getGithubConfig();
-
-  // 如果没有配置 owner，显示提示
-  if (owner === 'YOUR_GITHUB_USERNAME') {
-    container.innerHTML = `
-      <div class="comment-empty">
-        <p>评论功能需要配置 GitHub 仓库信息</p>
-        <p style="font-size: 0.85rem; margin-top: 8px;">
-          在代码中设置 GITHUB_OWNER 和 GITHUB_REPO 即可启用
-        </p>
-      </div>
-    `;
-    return;
+// ===== 读取本地评论 =====
+function loadLocalComments(storyId) {
+  try {
+    const key = `narrative-comments-${storyId}`;
+    const data = localStorage.getItem(key);
+    if (!data) return [];
+    return JSON.parse(data);
+  } catch (e) {
+    console.error('读取本地评论失败:', e);
+    return [];
   }
+}
+
+// ===== 保存本地评论 =====
+function saveLocalComments(storyId, comments) {
+  try {
+    const key = `narrative-comments-${storyId}`;
+    localStorage.setItem(key, JSON.stringify(comments));
+  } catch (e) {
+    console.error('保存本地评论失败:', e);
+  }
+}
+
+// ===== 加载 GitHub 评论（可选）=====
+async function loadGithubComments(storyId) {
+  const issueNumber = STORY_ISSUE_MAP[storyId];
+  if (!issueNumber) return [];
 
   try {
     const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}/comments`
+      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues/${issueNumber}/comments`
     );
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        container.innerHTML = `
-          <div class="comment-empty">
-            <p>暂无评论，来做第一个留言的人吧～</p>
-          </div>
-        `;
-        return;
-      }
-      throw new Error(`HTTP ${response.status}`);
-    }
-
+    if (!response.ok) return [];
     const comments = await response.json();
-    renderComments(comments, container);
+    return comments.map(c => {
+      let body = c.body;
+      let author = c.user?.login || '匿名';
+      const match = body.match(/^([^:]+):\s*(.+)$/s);
+      if (match) {
+        author = match[1].trim();
+        body = match[2].trim();
+      }
+      return {
+        name: author,
+        text: body,
+        time: c.created_at,
+        source: 'github',
+      };
+    });
   } catch (error) {
-    console.error('加载评论失败:', error);
-    container.innerHTML = `
-      <div class="comment-empty">
-        <p>评论加载失败，请稍后重试</p>
-        <p style="font-size: 0.85rem; margin-top: 8px;">${error.message}</p>
-      </div>
-    `;
+    console.error('加载 GitHub 评论失败:', error);
+    return [];
   }
 }
 
-// 渲染评论列表
+// ===== 合并并排序评论 =====
+async function loadAllComments(storyId) {
+  const local = loadLocalComments(storyId);
+  const github = await loadGithubComments(storyId);
+  const all = [...github, ...local];
+  // 按时间排序
+  all.sort((a, b) => new Date(a.time) - new Date(b.time));
+  return all;
+}
+
+// ===== 渲染评论列表 =====
 function renderComments(comments, container) {
   if (!comments || comments.length === 0) {
     container.innerHTML = `
@@ -99,26 +103,17 @@ function renderComments(comments, container) {
   }
 
   const html = comments.map(comment => {
-    const date = new Date(comment.created_at);
-    const timeStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const date = new Date(comment.time);
+    const timeStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    const sourceTag = comment.source === 'github' ? '' : '<span style="font-size:0.7rem;opacity:0.5;margin-left:4px;">(本地)</span>';
     
-    // 从评论体中提取昵称（格式：昵称: 内容）
-    let body = comment.body;
-    let author = comment.user.login;
-    
-    const match = body.match(/^([^:]+):\s*(.+)$/s);
-    if (match) {
-      author = match[1].trim();
-      body = match[2].trim();
-    }
-
     return `
       <div class="comment-item">
         <div class="comment-header">
-          <span class="comment-author">${escapeHtml(author)}</span>
+          <span class="comment-author">${escapeHtml(comment.name)}${sourceTag}</span>
           <span class="comment-time">${timeStr}</span>
         </div>
-        <div class="comment-body">${escapeHtml(body)}</div>
+        <div class="comment-body">${escapeHtml(comment.text)}</div>
       </div>
     `;
   }).join('');
@@ -126,75 +121,47 @@ function renderComments(comments, container) {
   container.innerHTML = html;
 }
 
-// 提交评论
+// ===== 提交评论（本地存储）=====
 async function submitComment(name, text) {
-  const story = getCurrentStory();
-  if (!story) return { success: false, error: '无法识别当前故事' };
+  const storyId = getCurrentStory();
+  if (!storyId) return { success: false, error: '无法识别当前故事' };
 
-  const issueNumber = STORY_ISSUE_MAP[story];
-  const { owner, repo } = getGithubConfig();
+  const comments = loadLocalComments(storyId);
+  comments.push({
+    name: name || '匿名读者',
+    text: text,
+    time: new Date().toISOString(),
+    source: 'local',
+  });
 
-  if (owner === 'YOUR_GITHUB_USERNAME') {
-    return { success: false, error: '评论功能尚未配置' };
-  }
-
-  // 检查是否有 token（用于写入）
-  // 注意：在纯前端环境中，需要使用 GitHub OAuth 或让用户手动提供 token
-  // 这里提供两种方案：
-  // 方案1：通过 URL 参数传入 token（仅测试用，不推荐生产环境）
-  // 方案2：引导用户到 GitHub 创建评论（更安全）
-  
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get('token') || localStorage.getItem('github_token');
-
-  if (!token) {
-    // 没有 token，引导用户到 GitHub 创建评论
-    const issueUrl = `https://github.com/${owner}/${repo}/issues/${issueNumber}`;
-    return {
-      success: false,
-      error: '需要 GitHub 身份验证才能发表评论',
-      redirectUrl: issueUrl,
-    };
-  }
-
-  try {
-    const commentBody = `${name || '匿名读者'}: ${text}`;
-    const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}/comments`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `token ${token}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ body: commentBody }),
-      }
-    );
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || `HTTP ${response.status}`);
-    }
-
-    return { success: true };
-  } catch (error) {
-    console.error('提交评论失败:', error);
-    return { success: false, error: error.message };
-  }
+  saveLocalComments(storyId, comments);
+  return { success: true };
 }
 
-// HTML 转义
+// ===== HTML 转义 =====
 function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
 }
 
-// 初始化评论功能
+// ===== 初始化评论功能 =====
 export function initComments() {
-  loadComments();
+  const storyId = getCurrentStory();
+  if (!storyId) {
+    console.warn('无法识别当前故事，评论功能未初始化');
+    return;
+  }
 
+  // 加载评论
+  const container = document.getElementById('commentsContainer');
+  if (container) {
+    loadAllComments(storyId).then(comments => {
+      renderComments(comments, container);
+    });
+  }
+
+  // 绑定提交表单
   const form = document.getElementById('commentForm');
   if (!form) return;
 
@@ -205,7 +172,7 @@ export function initComments() {
     const textInput = document.getElementById('commentText');
     const submitBtn = form.querySelector('.comment-submit');
 
-    const name = nameInput?.value.trim() || '匿名读者';
+    const name = nameInput?.value.trim() || '';
     const text = textInput?.value.trim();
 
     if (!text) return;
@@ -218,15 +185,9 @@ export function initComments() {
     if (result.success) {
       textInput.value = '';
       if (nameInput) nameInput.value = '';
-      loadComments(); // 重新加载评论
-    } else if (result.redirectUrl) {
-      // 引导用户到 GitHub 创建评论
-      const confirmed = confirm(
-        `由于安全限制，需要跳转到 GitHub 页面发表评论。\n\n是否跳转？`
-      );
-      if (confirmed) {
-        window.open(result.redirectUrl, '_blank');
-      }
+      // 重新加载并渲染
+      const comments = await loadAllComments(storyId);
+      renderComments(comments, container);
     } else {
       alert(`评论失败：${result.error}`);
     }
@@ -236,4 +197,4 @@ export function initComments() {
   });
 }
 
-export { loadComments };
+export { loadAllComments };
