@@ -87,8 +87,8 @@ function setupChapterNavigation(data) {
     // 重新渲染内容
     renderStory(data, storyId, targetIndex);
     
-    // 检查章节 BGM 触点
-    handleChapterBgm(data, targetIndex);
+    // 检查章节 BGM 触点（翻页切换，快速响应）
+    handleChapterBgm(data, targetIndex, false);
     
     // 预加载下一章 BGM（阅读时后台加载）
     preloadNextChapterBgm(data, targetIndex);
@@ -111,8 +111,8 @@ function setupChapterNavigation(data) {
     
     renderStory(data, storyId, targetIndex);
     
-    // 检查章节 BGM 触点
-    handleChapterBgm(data, targetIndex);
+    // 检查章节 BGM 触点（翻页切换，快速响应）
+    handleChapterBgm(data, targetIndex, false);
     
     // 预加载下一章 BGM
     preloadNextChapterBgm(data, targetIndex);
@@ -124,8 +124,8 @@ function setupChapterNavigation(data) {
     const newIndex = parseInt(newParams.get('ch')) || 0;
     renderStory(data, storyId, newIndex);
     
-    // 检查章节 BGM 触点
-    handleChapterBgm(data, newIndex);
+    // 检查章节 BGM 触点（翻页切换，快速响应）
+    handleChapterBgm(data, newIndex, false);
     
     // 预加载下一章 BGM
     preloadNextChapterBgm(data, newIndex);
@@ -215,10 +215,30 @@ function setVinylLoading(isLoading) {
   }
 }
 
+// 显示/隐藏加载提示（页面中央）
+function showBgmLoading(text) {
+  let el = document.getElementById('bgmLoading');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'bgmLoading';
+    el.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;padding:12px 20px;background:rgba(0,0,0,0.75);color:#fff;border-radius:8px;font-size:14px;letter-spacing:1px;transition:opacity 0.3s;opacity:0;pointer-events:none;';
+    document.body.appendChild(el);
+  }
+  el.textContent = text;
+  el.style.opacity = '1';
+}
+
+function hideBgmLoading() {
+  const el = document.getElementById('bgmLoading');
+  if (el) el.style.opacity = '0';
+}
+
 // Crossfade 过渡：旧音乐淡出 duration 毫秒，新音乐同时淡入
-// 优化：不等 canplaythrough，直接开始过渡。新音乐加载完成后淡入。
-function crossfadeBgm(bgm, newSrc, duration = 1000) {
+// waitForLoad=true: 等待新音频加载完成再开始（用于直接进入某章）
+// waitForLoad=false: 1.5s 超时，直接开始（用于翻页切换）
+function crossfadeBgm(bgm, newSrc, duration = 1000, waitForLoad = false) {
   setVinylLoading(true);
+  showBgmLoading('🎵 音乐加载中...');
   
   const newAudio = new Audio();
   newAudio.preload = 'auto';
@@ -236,6 +256,7 @@ function crossfadeBgm(bgm, newSrc, duration = 1000) {
     newAudio.pause();
     newAudio.src = '';
     setVinylLoading(false);
+    hideBgmLoading();
   }
   
   function showPlayModal() {
@@ -264,6 +285,7 @@ function crossfadeBgm(bgm, newSrc, duration = 1000) {
     if (finished) return;
     
     newAudioReady = true;
+    hideBgmLoading();
     // 开始播放新音频（静音状态）
     newAudio.play().catch(() => {});
     
@@ -313,6 +335,7 @@ function crossfadeBgm(bgm, newSrc, duration = 1000) {
       newAudio.src = '';
       
       setVinylLoading(false);
+      hideBgmLoading();
       window.__bgmPlayed = true;
       sessionStorage.setItem('bgm_playing', 'true');
     }
@@ -323,11 +346,21 @@ function crossfadeBgm(bgm, newSrc, duration = 1000) {
   // 如果新音频已经预加载过，直接开始过渡
   if (__bgmPreloadState[newSrc] === 'loaded') {
     startTransition();
-  } else {
-    // 新音频还没加载好：先开始旧音乐淡出，等加载好了再淡入新音乐
+  } else if (waitForLoad) {
+    // 直接进入某章：等待加载完成再开始过渡
     newAudio.addEventListener('canplaythrough', startTransition, { once: true });
-    
-    // 先开始旧音乐淡出（新音乐还没加载好时，音量保持 0）
+    newAudio.addEventListener('error', () => {
+      if (finished) return;
+      console.error('新 BGM 加载失败:', newSrc);
+      cleanup();
+      bgm.src = newSrc;
+      bgm.load();
+      bgm.volume = 1;
+      bgm.play().catch(() => showPlayModal());
+    }, { once: true });
+  } else {
+    // 翻页切换：先开始旧音乐淡出，等加载好了再淡入新音乐
+    newAudio.addEventListener('canplaythrough', startTransition, { once: true });
     startTransition();
     
     // 加载错误处理
@@ -340,23 +373,25 @@ function crossfadeBgm(bgm, newSrc, duration = 1000) {
       bgm.volume = 1;
       bgm.play().catch(() => showPlayModal());
     }, { once: true });
+    
+    // 1.5 秒超时：不等了，直接切换
+    setTimeout(() => {
+      if (finished) return;
+      console.log('BGM crossfade 超时，直接切换:', newSrc);
+      newAudio.removeEventListener('canplaythrough', startTransition);
+      cleanup();
+      bgm.src = newSrc;
+      bgm.load();
+      bgm.volume = 1;
+      bgm.play().catch(() => showPlayModal());
+    }, 1500);
   }
-  
-  // 安全超时：1.5 秒内未加载完成则直接切换（不等了，直接播放）
-  setTimeout(() => {
-    if (finished) return;
-    console.log('BGM crossfade 超时，直接切换:', newSrc);
-    newAudio.removeEventListener('canplaythrough', startTransition);
-    cleanup();
-    bgm.src = newSrc;
-    bgm.load();
-    bgm.volume = 1;
-    bgm.play().catch(() => showPlayModal());
-  }, 1500);
 }
 
 // 章节 BGM 触点处理：切换章节时检查是否需要过渡音乐
-function handleChapterBgm(data, chapterIndex) {
+// directEntry=true: 页面初始化直接进入某章（等待 BGM 加载完成）
+// directEntry=false: 翻页切换（1.5s 超时，快速响应）
+function handleChapterBgm(data, chapterIndex, directEntry = false) {
   const bgm = document.getElementById('bgm');
   if (!bgm) return;
   
@@ -405,8 +440,9 @@ function handleChapterBgm(data, chapterIndex) {
     return;
   }
   
-  // 正在播放中：使用 crossfade 过渡（旧音乐 1s 淡出，新音乐 1s 淡入）
-  crossfadeBgm(bgm, targetBgm, 1000);
+  // 正在播放中：使用 crossfade 过渡
+  // 直接进入某章时等待加载，翻页切换时快速响应
+  crossfadeBgm(bgm, targetBgm, 1000, directEntry);
 }
 
 // ===== 内联评论模块（避免 Vite 缓存问题）=====
@@ -716,8 +752,8 @@ async function init() {
   // 渲染初始章节
   renderStory(data, storyId, initialChapter);
   
-  // 检查初始章节的 BGM 触点（直接进入某章时也要切换）
-  handleChapterBgm(data, initialChapter);
+  // 检查初始章节的 BGM 触点（直接进入某章时等待加载完成）
+  handleChapterBgm(data, initialChapter, true);
   
   // 预加载下一章 BGM
   preloadNextChapterBgm(data, initialChapter);
@@ -734,7 +770,7 @@ async function init() {
   // 注入版本号
   const versionMark = document.querySelector('.version-mark');
   if (versionMark) {
-    versionMark.textContent = 'v1.0.21';
+    versionMark.textContent = 'v1.0.22';
   }
 }
 
