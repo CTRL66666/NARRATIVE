@@ -12,14 +12,14 @@
   <link rel="stylesheet" href="./src/shared/themes.css">
   <script>
   // ===== BGM 预加载（在 JS 模块加载前就开始）=====
-  // 用 Audio 元素预加载，确保与主 <audio id="bgm"> 共享浏览器缓存
+  // 直接给 <audio id="bgm"> 设置 src，让浏览器在页面解析时就开始加载
   (function() {
     var p = new URLSearchParams(location.search);
     var id = p.get('id');
     var ch = parseInt(p.get('ch')) || 0;
     if (!id) return;
 
-    // 故事 ID → BGM URL 映射（与 config.json 和 data.json 保持一致）
+    // 故事 ID → BGM URL 映射
     var BGM_MAP = {
       'story1': {
         'default': './audio/见字如面.mp3',
@@ -35,18 +35,12 @@
     var url = (story.chapters && story.chapters[ch]) || story.default;
     if (!url) return;
 
-    // 用 Audio 元素预加载，和主 audio 元素完全相同的缓存机制
-    var a = new Audio();
-    a.preload = 'auto';
-    a.src = url;
-    a.load();
-
-    // 记录到全局，供 JS 检测
-    window.__preloadedBgm = url;
-    window.__preloadedBgmReady = false;
-    a.addEventListener('canplay', function() {
-      window.__preloadedBgmReady = true;
-    }, { once: true });
+    // 直接给 DOM 中的 audio 元素设置 src，浏览器在页面加载时就开始下载
+    var bgm = document.getElementById('bgm');
+    if (bgm) {
+      bgm.src = url;
+      bgm.load();
+    }
   })();
   </script>
 </head>
@@ -110,7 +104,7 @@
   <!-- 音频播放弹窗（自动播放失败时显示） -->
   <div id="bgmModal" class="bgm-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;justify-content:center;align-items:center;">
     <div class="bgm-modal-content" style="background:#fff;padding:24px 32px;border-radius:12px;text-align:center;max-width:280px;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
-      <p style="margin:0 0 16px 0;font-size:15px;color:#333;line-height:1.6;">自动播放音乐失败<br>建议您点击下方打开音乐</p>
+      <p style="margin:0 0 16px 0;font-size:15px;color:#333;line-height:1.6;">自动播放音乐失败<br>点击下方打开音乐</p>
       <button id="bgmModalBtn" style="padding:10px 28px;background:#8B4513;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;">打开音乐</button>
     </div>
   </div>

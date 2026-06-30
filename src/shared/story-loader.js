@@ -660,43 +660,64 @@ async function init() {
       modalBtn.onclick = () => {
         window.__bgmModalClicked = true;
 
-        // 如果音频已加载（readyState >= 2 表示有足够数据开始播放）
+        // 直接尝试播放
+        const doPlay = () => {
+          bgm.play().then(() => {
+            window.__bgmPlayed = true;
+            sessionStorage.setItem('bgm_playing', 'true');
+          }).catch(() => {});
+        };
+
+        // 如果已加载：直接播放并关闭弹窗
         if (bgm.readyState >= 2) {
           hidePlayModal();
-          bgm.play().catch(() => {});
+          doPlay();
           return;
         }
 
-        // 音频还没加载好：显示加载中，等待加载完成自动播放
+        // 还没加载好：显示加载中，轮询 readyState
         showBgmLoading('🎵 音乐加载中...');
-        bgm.addEventListener('canplay', () => {
-          hideBgmLoading();
-          hidePlayModal();
-          bgm.play().catch(() => {});
-        }, { once: true });
+        let pollCount = 0;
+        const poll = setInterval(() => {
+          pollCount++;
+          if (bgm.readyState >= 2) {
+            clearInterval(poll);
+            hideBgmLoading();
+            hidePlayModal();
+            doPlay();
+            return;
+          }
+          // 10秒超时（100ms * 100 = 10秒）
+          if (pollCount > 100) {
+            clearInterval(poll);
+            hideBgmLoading();
+            bgm.load();
+            doPlay();
+          }
+        }, 100);
       };
     }
 
+    // 设置音频源（story.html <head> 可能已经设置了）
     if (savedSrc === storyConfig.bgm) {
       // 同一故事内返回/刷新：恢复进度
-      bgm.src = storyConfig.bgm;
-      bgm.load();
-      function onCanplay() {
-        bgm.currentTime = savedTime;
-        if (wasPlaying && !userPaused) {
-          bgm.play().catch(() => showPlayModal());
-        }
+      if (bgm.src !== storyConfig.bgm) {
+        bgm.src = storyConfig.bgm;
+        bgm.load();
       }
-      bgm.addEventListener('canplay', onCanplay, { once: true });
-      if (bgm.readyState >= 3) {
-        onCanplay();
+      // 恢复播放时间
+      if (wasPlaying && !userPaused) {
+        bgm.currentTime = savedTime;
+        bgm.play().catch(() => showPlayModal());
       }
     } else {
       // 换了故事：从头开始，清除旧进度
       sessionStorage.removeItem('bgm_time');
       sessionStorage.removeItem('bgm_playing');
-      bgm.src = storyConfig.bgm;
-      bgm.load();
+      if (bgm.src !== storyConfig.bgm) {
+        bgm.src = storyConfig.bgm;
+        bgm.load();
+      }
     }
 
     sessionStorage.setItem('bgm_src', storyConfig.bgm);
@@ -714,24 +735,28 @@ async function init() {
         });
       };
 
-      // 检查预加载状态：如果预加载完成，直接播放
-      if (window.__preloadedBgm === storyConfig.bgm && window.__preloadedBgmReady) {
-        console.log('预加载完成，立即尝试播放');
-        tryPlay();
-      } else if (bgm.readyState >= 3) {
+      // 如果已加载，直接尝试播放
+      if (bgm.readyState >= 3) {
         tryPlay();
       } else {
-        // 等待音频加载完成
-        bgm.addEventListener('canplay', tryPlay, { once: true });
+        // 轮询 readyState，加载好后自动播放
+        let pollCount = 0;
+        const poll = setInterval(() => {
+          pollCount++;
+          if (bgm.readyState >= 3) {
+            clearInterval(poll);
+            tryPlay();
+            return;
+          }
+          // 3秒超时：直接弹窗
+          if (pollCount > 30) {
+            clearInterval(poll);
+            if (!window.__bgmPlayed && !window.__bgmModalShown) {
+              showPlayModal();
+            }
+          }
+        }, 100);
       }
-
-      // 3秒兜底：加载太慢直接弹窗
-      setTimeout(() => {
-        if (!window.__bgmPlayed && !window.__bgmModalShown) {
-          console.log('音频加载超时，显示弹窗');
-          showPlayModal();
-        }
-      }, 3000);
 
       // 加载失败也显示弹窗
       bgm.addEventListener('error', () => {
@@ -780,7 +805,7 @@ async function init() {
   // 注入版本号
   const versionMark = document.querySelector('.version-mark');
   if (versionMark) {
-    versionMark.textContent = 'v1.0.26';
+    versionMark.textContent = 'v1.0.27';
   }
 }
 
