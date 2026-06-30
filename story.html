@@ -10,6 +10,39 @@
   <link rel="stylesheet" href="./src/shared/nav.css">
   <link rel="stylesheet" href="./src/shared/vinyl-player.css">
   <link rel="stylesheet" href="./src/shared/themes.css">
+  <script>
+  // 预加载当前故事章节的 BGM（在 JS 加载前就开始）
+  (function() {
+    const p = new URLSearchParams(location.search);
+    const id = p.get('id');
+    const ch = parseInt(p.get('ch')) || 0;
+    if (!id) return;
+    
+    // 强制预加载：用 fetch 比 Audio 更可靠
+    function forcePreload(url) {
+      if (!url) return;
+      try {
+        fetch(url, { method: 'GET', mode: 'no-cors' }).catch(() => {});
+      } catch (e) {}
+    }
+    
+    // 从 sessionStorage 读取已知的 BGM URL
+    const savedSrc = sessionStorage.getItem('bgm_src');
+    if (savedSrc) {
+      forcePreload(savedSrc);
+    }
+    
+    // 根据故事 ID 和章节预加载（硬编码常见故事）
+    if (id === 'story1') {
+      // 故事1：第三章是鸟之诗
+      if (ch === 2) {
+        forcePreload('./audio/折戸伸治 - 鸟之诗 (八音盒版).mp3');
+      } else {
+        forcePreload('./audio/见字如面.mp3');
+      }
+    }
+  })();
+  </script>
 </head>
 <body>
   <!-- 背景效果容器（动态插入） -->

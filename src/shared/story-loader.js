@@ -640,28 +640,49 @@ async function init() {
     const wasPlaying = sessionStorage.getItem('bgm_playing') === 'true';
     const userPaused = window.__bgmUserPaused;
 
-    // 统一显示弹窗的函数
+    // 统一显示弹窗的函数（只显示一次，避免重复）
+    let modalAlreadyShown = false;
     const showPlayModal = () => {
+      if (modalAlreadyShown) return;
+      modalAlreadyShown = true;
       const modal = document.getElementById('bgmModal');
       const modalBtn = document.getElementById('bgmModalBtn');
       const vinylDisc = document.getElementById('vinylDisc');
       if (modal && modal.style.display !== 'flex') {
         modal.style.display = 'flex';
       }
-      // 唱片脉冲光效提示
       if (vinylDisc) {
         vinylDisc.classList.add('hint-pulse');
       }
       if (modalBtn && !modalBtn._hasClick) {
         modalBtn._hasClick = true;
         modalBtn.onclick = () => {
-          bgm.load();
-          bgm.play().then(() => {
-            window.__bgmPlayed = true;
-            sessionStorage.setItem('bgm_playing', 'true');
-            if (modal) modal.style.display = 'none';
-            if (vinylDisc) vinylDisc.classList.remove('hint-pulse');
-          }).catch(() => {});
+          // 点击后立即关闭弹窗，给用户即时反馈
+          if (modal) modal.style.display = 'none';
+          if (vinylDisc) vinylDisc.classList.remove('hint-pulse');
+          // 后台尝试播放（不阻塞 UI）
+          const tryResume = () => {
+            bgm.play().then(() => {
+              window.__bgmPlayed = true;
+              sessionStorage.setItem('bgm_playing', 'true');
+            }).catch(() => {
+              // 播放失败，重新显示弹窗
+              modalAlreadyShown = false;
+              showPlayModal();
+            });
+          };
+          if (bgm.readyState >= 3) {
+            tryResume();
+          } else {
+            bgm.addEventListener('canplay', tryResume, { once: true });
+            // 2秒加载超时
+            setTimeout(() => {
+              if (bgm.paused) {
+                modalAlreadyShown = false;
+                showPlayModal();
+              }
+            }, 2000);
+          }
         };
       }
     };
@@ -692,19 +713,28 @@ async function init() {
 
     // 尝试自动播放（仅用户未手动暂停时）
     if (!userPaused) {
+      let playTimeout = null;
+      
       const tryPlay = () => {
         bgm.play().then(() => {
+          // 播放成功：清除超时，确保不弹窗
+          if (playTimeout) clearTimeout(playTimeout);
           window.__bgmPlayed = true;
           sessionStorage.setItem('bgm_playing', 'true');
+          console.log('自动播放成功');
         }).catch((err) => {
+          // 播放被阻止：清除超时，显示弹窗
+          if (playTimeout) clearTimeout(playTimeout);
           console.log('自动播放被阻止:', err.name);
           showPlayModal();
         });
       };
 
-      // 3秒超时兜底：无论音频加载状态如何，超时后显示弹窗
-      let playTimeout = setTimeout(() => {
-        console.log('音频播放超时，显示弹窗');
+      // 3秒超时兜底：音频加载太慢时显示弹窗
+      playTimeout = setTimeout(() => {
+        // 如果已经播放成功了，不显示弹窗
+        if (window.__bgmPlayed) return;
+        console.log('音频加载超时，显示弹窗');
         showPlayModal();
       }, 3000);
 
@@ -766,7 +796,7 @@ async function init() {
   // 注入版本号
   const versionMark = document.querySelector('.version-mark');
   if (versionMark) {
-    versionMark.textContent = 'v1.0.23';
+    versionMark.textContent = 'v1.0.24';
   }
 }
 
