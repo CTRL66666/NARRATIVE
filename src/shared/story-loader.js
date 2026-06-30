@@ -1,8 +1,6 @@
-// 全局音频播放控制（必须在 init() 之前定义，确保用户交互能被捕获）
+// 全局音频播放控制
 window.__bgmUserPaused = false;
-window.__userInteracted = false;
-window.__audioContext = null;
-window.__bgmPlayed = false; // 标记是否已成功播放
+window.__bgmPlayed = false;
 
 // 环境检测
 const isWeixin = /MicroMessenger/i.test(navigator.userAgent);
@@ -11,82 +9,27 @@ const isAndroidWeixin = isWeixin && isAndroid;
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 const isMobile = isAndroid || isIOS;
 
-// 初始化 Web Audio API（Android 微信需要）
-function initWebAudio(bgm) {
-  if (isAndroidWeixin && !window.__audioContext && bgm) {
-    try {
-      window.__audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const source = window.__audioContext.createMediaElementSource(bgm);
-      source.connect(window.__audioContext.destination);
-      console.log('Web Audio 初始化成功（Android 微信）');
-    } catch (e) {
-      console.error('Web Audio 初始化失败:', e);
-    }
-  }
-}
-
-// 统一播放函数（所有环境通用）
-window.__playBgm = () => {
+// 全局事件监听器（兜底：如果 AudioContext 未解锁，等待用户点击）
+// 注意：scroll/touchmove 不算用户手势，不能解锁音频
+function onUserClick(e) {
+  if (window.__bgmPlayed || window.__bgmUserPaused) return;
+  
   const bgm = document.getElementById('bgm');
-  if (!bgm || window.__bgmUserPaused || !bgm.src) return;
-  if (window.__bgmPlayed) return; // 已经播放成功，不再重复
-
-  // Android 微信：先恢复 AudioContext，再播放
-  if (isAndroidWeixin && window.__audioContext) {
-    window.__audioContext.resume().then(() => {
-      bgm.play().then(() => {
-        window.__bgmPlayed = true;
-        sessionStorage.setItem('bgm_playing', 'true');
-      }).catch(() => {});
-    }).catch(() => {});
-    return;
-  }
-
-  // 其他环境：直接播放
+  if (!bgm || !bgm.src) return;
+  
+  // 用户点击，直接尝试播放
   bgm.play().then(() => {
     window.__bgmPlayed = true;
     sessionStorage.setItem('bgm_playing', 'true');
   }).catch(() => {});
-};
-
-// 立即绑定全局事件监听器（不等待 init() 异步加载）
-// 不设置 once: true，持续监听直到播放成功
-function onUserInteraction(e) {
-  if (window.__bgmPlayed || window.__bgmUserPaused) return;
-
-  window.__userInteracted = true;
-
-  // Android 微信：用户交互时立即创建 AudioContext 并尝试恢复
-  if (isAndroidWeixin) {
-    const bgm = document.getElementById('bgm');
-    if (bgm && !window.__audioContext) {
-      initWebAudio(bgm);
-    }
-    if (window.__audioContext) {
-      window.__audioContext.resume().catch(() => {});
-    }
-  }
-
-  // 尝试播放（如果 bgm.src 已设置则播放，否则等待）
-  window.__playBgm();
-
-  // 如果 bgm.src 还没设置，持续监听
-  const bgm = document.getElementById('bgm');
-  if (!bgm || !bgm.src) return;
-
-  // 播放成功，移除所有监听器
-  if (window.__bgmPlayed) {
-    document.removeEventListener('touchstart', onUserInteraction);
-    document.removeEventListener('click', onUserInteraction);
-    window.removeEventListener('scroll', onUserInteraction);
-    document.removeEventListener('touchmove', onUserInteraction);
-  }
+  
+  // 移除监听器
+  document.removeEventListener('touchstart', onUserClick);
+  document.removeEventListener('click', onUserClick);
 }
 
-document.addEventListener('touchstart', onUserInteraction, { passive: true });
-document.addEventListener('click', onUserInteraction);
-window.addEventListener('scroll', onUserInteraction, { passive: true });
-document.addEventListener('touchmove', onUserInteraction, { passive: true });
+document.addEventListener('touchstart', onUserClick, { once: true, passive: true });
+document.addEventListener('click', onUserClick, { once: true });
 
 import config from '../stories/config.json';
 import { initVinylPlayer } from './vinyl-player.js';
@@ -399,7 +342,7 @@ async function init() {
       bgm.src = storyConfig.bgm;
       function onCanplay() {
         bgm.currentTime = savedTime;
-        if (wasPlaying) window.__playBgm();
+        if (wasPlaying) bgm.play().catch(() => {});
       }
       bgm.addEventListener('canplay', onCanplay, { once: true });
       if (bgm.readyState >= 3) {
@@ -412,25 +355,40 @@ async function init() {
       bgm.src = storyConfig.bgm;
       // 新故事也绑定 canplay，音频加载完成后尝试播放
       bgm.addEventListener('canplay', function onNewStoryCanplay() {
-        window.__playBgm();
+        bgm.play().catch(() => {});
       }, { once: true });
     }
 
     sessionStorage.setItem('bgm_src', storyConfig.bgm);
 
-    // Android 微信：初始化 Web Audio
-    if (isAndroidWeixin) {
-      initWebAudio(bgm);
-    }
-
-    // 如果用户已经交互过，立即尝试播放
-    if (window.__userInteracted) {
-      window.__playBgm();
-    }
-
-    // 桌面端直接尝试
-    if (!isWeixin && !isMobile) {
-      window.__playBgm();
+    // 使用首页创建的 AudioContext（如果已解锁）
+    if (window.__sharedAudioContext && window.__sharedAudioContext.state === 'running') {
+      try {
+        // 检查是否已经创建过 MediaElementSource
+        if (!bgm.__mediaElementSource) {
+          const source = window.__sharedAudioContext.createMediaElementSource(bgm);
+          source.connect(window.__sharedAudioContext.destination);
+          bgm.__mediaElementSource = true;
+        }
+      } catch (e) {
+        console.log('MediaElementSource 已存在或创建失败:', e);
+      }
+      
+      // AudioContext 已解锁，直接尝试播放
+      // 注意：这里不放在异步回调中，直接同步调用
+      const playPromise = bgm.play();
+      if (playPromise) {
+        playPromise.then(() => {
+          sessionStorage.setItem('bgm_playing', 'true');
+        }).catch(() => {
+          // 如果音频还没加载完成，play() 会返回 pending 的 Promise
+          // 浏览器会在加载完成后自动播放
+          console.log('音频加载中，将在加载完成后自动播放');
+        });
+      }
+    } else if (!isWeixin && !isMobile) {
+      // 桌面端直接尝试
+      bgm.play().catch(() => {});
     }
   }
 
@@ -467,7 +425,7 @@ async function init() {
   // 注入版本号
   const versionMark = document.querySelector('.version-mark');
   if (versionMark) {
-    versionMark.textContent = 'v1.0.12';
+    versionMark.textContent = 'v1.0.13';
   }
 }
 
