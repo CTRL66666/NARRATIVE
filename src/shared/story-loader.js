@@ -2,37 +2,6 @@
 window.__bgmUserPaused = false;
 window.__bgmPlayed = false;
 
-// 环境检测
-const isWeixin = /MicroMessenger/i.test(navigator.userAgent);
-const isAndroid = /Android/i.test(navigator.userAgent);
-const isAndroidWeixin = isWeixin && isAndroid;
-const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-const isMobile = isAndroid || isIOS;
-
-// 待播放的 BGM（当自动播放失败时保存）
-let pendingBgm = null;
-
-// 在模块加载时立即绑定事件监听器（不等待 init() 异步完成）
-// 用户点击页面任意位置时，如果 pendingBgm 存在，则播放
-function onUserClick(e) {
-  if (window.__bgmUserPaused) return;
-  
-  if (pendingBgm && pendingBgm.src) {
-    pendingBgm.play().then(() => {
-      window.__bgmPlayed = true;
-      sessionStorage.setItem('bgm_playing', 'true');
-      pendingBgm = null;
-    }).catch(() => {});
-  }
-  
-  // 移除监听器
-  document.removeEventListener('touchstart', onUserClick);
-  document.removeEventListener('click', onUserClick);
-}
-
-document.addEventListener('touchstart', onUserClick, { once: true, passive: true });
-document.addEventListener('click', onUserClick, { once: true });
-
 import config from '../stories/config.json';
 import { initVinylPlayer } from './vinyl-player.js';
 import { renderStory } from './story-renderer.js';
@@ -359,17 +328,36 @@ async function init() {
 
     sessionStorage.setItem('bgm_src', storyConfig.bgm);
 
-    // 立即尝试播放（同步调用）
-    const playPromise = bgm.play();
-    if (playPromise) {
-      playPromise.then(() => {
+    // 尝试自动播放
+    const playBtn = document.getElementById('bgmPlayBtn');
+    const tryPlay = () => {
+      bgm.play().then(() => {
         window.__bgmPlayed = true;
         sessionStorage.setItem('bgm_playing', 'true');
-      }).catch(() => {
-        // 播放被阻止，保存到 pendingBgm，等待用户点击
-        pendingBgm = bgm;
-        console.log('BGM 自动播放被阻止，等待用户点击...');
+        if (playBtn) playBtn.style.display = 'none';
+      }).catch((err) => {
+        // 自动播放被阻止，显示播放按钮
+        console.log('自动播放被阻止:', err.name);
+        if (playBtn) {
+          playBtn.style.display = 'block';
+          // 添加点击事件
+          playBtn.onclick = () => {
+            bgm.play().then(() => {
+              window.__bgmPlayed = true;
+              sessionStorage.setItem('bgm_playing', 'true');
+              playBtn.style.display = 'none';
+            }).catch(() => {});
+          };
+        }
       });
+    };
+
+    // 如果音频已经加载，立即尝试播放
+    if (bgm.readyState >= 3) {
+      tryPlay();
+    } else {
+      // 等待音频加载完成
+      bgm.addEventListener('canplay', tryPlay, { once: true });
     }
   }
 
@@ -406,7 +394,7 @@ async function init() {
   // 注入版本号
   const versionMark = document.querySelector('.version-mark');
   if (versionMark) {
-    versionMark.textContent = 'v1.0.14';
+    versionMark.textContent = 'v1.0.15';
   }
 }
 
