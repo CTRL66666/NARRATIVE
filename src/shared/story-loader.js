@@ -123,6 +123,162 @@ function setupChapterNavigation(data) {
   });
 }
 
+// ===== BGM 预加载 & Crossfade 过渡 =====
+// 预加载缓存：记录已预加载的 URL
+const __bgmPreloaded = new Set();
+
+function preloadBgm(url) {
+  if (!url || __bgmPreloaded.has(url)) return;
+  const audio = new Audio();
+  audio.preload = 'auto';
+  audio.src = url;
+  audio.addEventListener('canplaythrough', () => {
+    __bgmPreloaded.add(url);
+    console.log('BGM 预加载完成:', url);
+  }, { once: true });
+  audio.addEventListener('error', () => {
+    console.log('BGM 预加载失败:', url);
+  }, { once: true });
+}
+
+// 预加载故事的所有 BGM（故事默认 + 各章节不同 BGM）
+function preloadStoryBgms(data) {
+  const urls = new Set();
+  if (storyConfig.bgm) urls.add(storyConfig.bgm);
+  if (data.chapters) {
+    data.chapters.forEach(ch => {
+      if (ch.bgm) urls.add(ch.bgm);
+    });
+  }
+  urls.forEach(preloadBgm);
+}
+
+// Crossfade 过渡：旧音乐淡出 duration 毫秒，新音乐同时淡入
+function crossfadeBgm(bgm, newSrc, duration = 1000) {
+  const newAudio = new Audio();
+  newAudio.preload = 'auto';
+  newAudio.src = newSrc;
+  newAudio.volume = 0;
+  
+  let finished = false;
+  let animFrameId = null;
+  
+  function cleanup() {
+    if (finished) return;
+    finished = true;
+    if (animFrameId) cancelAnimationFrame(animFrameId);
+    newAudio.pause();
+    newAudio.src = '';
+  }
+  
+  const startTransition = () => {
+    if (finished) return;
+    
+    // 开始播放新音频（静音状态）
+    newAudio.play().catch(() => {});
+    
+    const startTime = performance.now();
+    const oldVolume = bgm.volume || 1;
+    
+    function animate(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // 旧音乐淡出（ease-out 效果更自然）
+      const easeOut = 1 - Math.pow(1 - progress, 2);
+      bgm.volume = Math.max(0, oldVolume * (1 - easeOut));
+      
+      // 新音乐淡入（ease-in 效果）
+      const easeIn = progress * progress;
+      newAudio.volume = Math.min(1, easeIn);
+      
+      if (progress < 1) {
+        animFrameId = requestAnimationFrame(animate);
+      } else {
+        finishTransition();
+      }
+    }
+    
+    function finishTransition() {
+      if (finished) return;
+      finished = true;
+      
+      const currentTime = newAudio.currentTime;
+      
+      // 停止旧音频
+      bgm.pause();
+      
+      // 新音频接管到 DOM 元素
+      bgm.src = newSrc;
+      bgm.load();
+      bgm.currentTime = currentTime;
+      bgm.volume = 1;
+      bgm.play().catch(() => {
+        // 自动播放被阻止，显示弹窗
+        const modal = document.getElementById('bgmModal');
+        const modalBtn = document.getElementById('bgmModalBtn');
+        const vinylDisc = document.getElementById('vinylDisc');
+        if (modal && modal.style.display !== 'flex') {
+          modal.style.display = 'flex';
+        }
+        if (vinylDisc) vinylDisc.classList.add('hint-pulse');
+        if (modalBtn && !modalBtn._hasClick) {
+          modalBtn._hasClick = true;
+          modalBtn.onclick = () => {
+            bgm.load();
+            bgm.play().then(() => {
+              window.__bgmPlayed = true;
+              sessionStorage.setItem('bgm_playing', 'true');
+              if (modal) modal.style.display = 'none';
+              if (vinylDisc) vinylDisc.classList.remove('hint-pulse');
+            }).catch(() => {});
+          };
+        }
+      });
+      
+      // 清理临时音频
+      newAudio.pause();
+      newAudio.src = '';
+      
+      window.__bgmPlayed = true;
+      sessionStorage.setItem('bgm_playing', 'true');
+    }
+    
+    animFrameId = requestAnimationFrame(animate);
+  };
+  
+  // 如果新音频已经预加载过，直接开始过渡
+  if (newAudio.readyState >= 4) {
+    startTransition();
+  } else {
+    newAudio.addEventListener('canplaythrough', startTransition, { once: true });
+    
+    // 加载错误处理
+    newAudio.addEventListener('error', () => {
+      if (finished) return;
+      console.error('新 BGM 加载失败:', newSrc);
+      cleanup();
+      // 直接切换，不做过渡
+      bgm.src = newSrc;
+      bgm.load();
+      bgm.volume = 1;
+      bgm.play().catch(() => {});
+    }, { once: true });
+  }
+  
+  // 安全超时：5 秒内未加载完成则直接切换
+  setTimeout(() => {
+    if (finished) return;
+    console.log('BGM crossfade 超时，直接切换:', newSrc);
+    newAudio.removeEventListener('canplaythrough', startTransition);
+    cleanup();
+    bgm.src = newSrc;
+    bgm.load();
+    bgm.volume = 1;
+    bgm.play().catch(() => {});
+  }, 5000);
+}
+
 // 章节 BGM 触点处理：切换章节时检查是否需要过渡音乐
 function handleChapterBgm(data, chapterIndex) {
   const bgm = document.getElementById('bgm');
@@ -158,57 +314,23 @@ function handleChapterBgm(data, chapterIndex) {
   sessionStorage.removeItem('bgm_time');
   sessionStorage.removeItem('bgm_playing');
   
-  bgm.src = targetBgm;
-  bgm.load();
-  
   // 更新唱片标签
   const label = document.getElementById('vinylLabel');
   if (label) {
     label.textContent = chapter.bgmLabel || storyConfig.bgmLabel || storyConfig.title;
   }
-  
   sessionStorage.setItem('bgm_src', targetBgm);
   
-  // 如果之前正在播放且用户没有手动暂停，继续播放
-  if (wasPlaying && !userPaused) {
-    const tryPlay = () => {
-      bgm.play().then(() => {
-        window.__bgmPlayed = true;
-        sessionStorage.setItem('bgm_playing', 'true');
-      }).catch(() => {
-        // 自动播放被阻止，显示弹窗
-        const modal = document.getElementById('bgmModal');
-        const modalBtn = document.getElementById('bgmModalBtn');
-        const vinylDisc = document.getElementById('vinylDisc');
-        if (modal && modal.style.display !== 'flex') {
-          modal.style.display = 'flex';
-        }
-        if (vinylDisc) vinylDisc.classList.add('hint-pulse');
-        if (modalBtn && !modalBtn._hasClick) {
-          modalBtn._hasClick = true;
-          modalBtn.onclick = () => {
-            bgm.load();
-            bgm.play().then(() => {
-              window.__bgmPlayed = true;
-              sessionStorage.setItem('bgm_playing', 'true');
-              if (modal) modal.style.display = 'none';
-              if (vinylDisc) vinylDisc.classList.remove('hint-pulse');
-            }).catch(() => {});
-          };
-        }
-      });
-    };
-    
-    if (bgm.readyState >= 3) {
-      tryPlay();
-    } else {
-      bgm.addEventListener('canplay', tryPlay, { once: true });
-    }
-    
-    bgm.addEventListener('error', () => {
-      console.log('章节 BGM 加载失败:', targetBgm);
-    }, { once: true });
+  // 如果用户已暂停，直接切换，不播放
+  if (!wasPlaying || userPaused) {
+    bgm.src = targetBgm;
+    bgm.load();
+    bgm.volume = 1;
+    return;
   }
+  
+  // 正在播放中：使用 crossfade 过渡（旧音乐 1s 淡出，新音乐 1s 淡入）
+  crossfadeBgm(bgm, targetBgm, 1000);
 }
 
 // ===== 内联评论模块（避免 Vite 缓存问题）=====
@@ -397,6 +519,9 @@ async function init() {
 
   // 设置主题
   document.body.dataset.theme = storyConfig.theme;
+  
+  // 预加载故事所有 BGM（解决切换时加载延迟问题）
+  preloadStoryBgms(data);
 
   // 设置 BGM
   const bgm = document.getElementById('bgm');
