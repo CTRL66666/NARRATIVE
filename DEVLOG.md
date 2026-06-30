@@ -142,18 +142,26 @@ v1.0.3 修复溢出时，把导航栏 padding 和字体缩得太小（`padding: 
 
 ## 2026-06-29 — 部署到 GitHub Pages
 
-### 问题现象
-本地构建后无法直接打开（相对路径 `./assets/` 在本地 file:// 协议下失败）。
+### 当前方案（GitHub Actions 自动构建）
+1. 源码提交到 main 分支（`src/`、`index.html`、`story.html` 等）
+2. GitHub Actions 自动运行 `npm run build`
+3. 部署 `dist/` 到 GitHub Pages
+4. 无需手动复制 `dist/` 到根目录
 
-### 解决方案
-1. `vite.config.js` 中 `base: './'` 使用相对路径
-2. GitHub Pages 从 `main` 分支根目录部署
-3. 创建 `start.bat` 一键本地服务器（`python -m http.server 8080`）
+### 旧方案（已废弃）
+之前手动构建部署流程：
+1. `npm run build` 生成 `dist/`
+2. `cp -r dist/* .` 复制到根目录（❌ 此步骤导致源码污染）
+3. `git push` 提交（同时提交了构建产物和源码）
+
+### 废弃原因
+手动复制 `dist/` 到根目录会覆盖 `index.html` 和 `story.html`，导致后续构建时 Vite 读取被污染的 HTML，产生旧引用和重复文件名。
 
 ### 注意事项
 - 本地开发用 `npm run dev`（`http://localhost:3000`）
-- 部署前运行 `npm run build` → 复制 `dist/` 到根目录 → `git push`
+- 需要本地预览时，`npm run build` 后访问 `dist/` 目录（不复制到根目录）
 - 推送时网络可能不稳定，需要 `git config http.sslVerify false`
+- GitHub Actions 构建状态：仓库 → Actions 标签页查看
 
 ---
 
