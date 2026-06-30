@@ -234,20 +234,23 @@ function hideBgmLoading() {
 }
 
 // Crossfade 过渡：旧音乐淡出 duration 毫秒，新音乐同时淡入
-// waitForLoad=true: 等待新音频加载完成再开始（用于直接进入某章）
-// waitForLoad=false: 1.5s 超时，直接开始（用于翻页切换）
+// 核心优化：新音频没准备好之前，旧音乐继续正常播放，不会静默
+// waitForLoad=true: 等待新音频 canplay 再开始（用于直接进入某章）
+// waitForLoad=false: 新音频 canplay 后自动开始，无需超时（用于翻页切换）
 function crossfadeBgm(bgm, newSrc, duration = 1000, waitForLoad = false) {
   setVinylLoading(true);
   showBgmLoading('🎵 音乐加载中...');
   
   const newAudio = new Audio();
-  newAudio.preload = 'auto';
+  // 关键优化：preload="metadata" 只加载文件头，比 "auto" 快得多
+  // 然后 play() 会让浏览器边下载边播放（流式播放）
+  newAudio.preload = 'metadata';
   newAudio.src = newSrc;
   newAudio.volume = 0;
   
+  let crossfadeStarted = false;
   let finished = false;
   let animFrameId = null;
-  let newAudioReady = false;
   
   function cleanup() {
     if (finished) return;
@@ -281,31 +284,31 @@ function crossfadeBgm(bgm, newSrc, duration = 1000, waitForLoad = false) {
     }
   }
   
-  const startTransition = () => {
-    if (finished) return;
+  // 真正的 crossfade 开始：新旧音乐同时开始过渡
+  function startCrossfade() {
+    if (crossfadeStarted || finished) return;
+    crossfadeStarted = true;
+    finished = true; // 防止超时回调再执行
     
-    newAudioReady = true;
     hideBgmLoading();
-    // 开始播放新音频（静音状态）
+    
+    // 新音频以音量 0 开始播放（已经开始流式播放了）
     newAudio.play().catch(() => {});
     
     const startTime = performance.now();
     const oldVolume = bgm.volume || 1;
     
     function animate(now) {
-      if (finished) return;
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
       
-      // 旧音乐淡出（ease-out 效果更自然）
+      // 旧音乐淡出（ease-out）
       const easeOut = 1 - Math.pow(1 - progress, 2);
       bgm.volume = Math.max(0, oldVolume * (1 - easeOut));
       
-      // 新音乐淡入（ease-in 效果），如果没加载好就保持 0
-      if (newAudioReady) {
-        const easeIn = progress * progress;
-        newAudio.volume = Math.min(1, easeIn);
-      }
+      // 新音乐淡入（ease-in）
+      const easeIn = progress * progress;
+      newAudio.volume = Math.min(1, easeIn);
       
       if (progress < 1) {
         animFrameId = requestAnimationFrame(animate);
@@ -315,9 +318,6 @@ function crossfadeBgm(bgm, newSrc, duration = 1000, waitForLoad = false) {
     }
     
     function finishTransition() {
-      if (finished) return;
-      finished = true;
-      
       const currentTime = newAudio.currentTime;
       
       // 停止旧音频
@@ -335,56 +335,52 @@ function crossfadeBgm(bgm, newSrc, duration = 1000, waitForLoad = false) {
       newAudio.src = '';
       
       setVinylLoading(false);
-      hideBgmLoading();
       window.__bgmPlayed = true;
       sessionStorage.setItem('bgm_playing', 'true');
     }
     
     animFrameId = requestAnimationFrame(animate);
-  };
+  }
   
-  // 如果新音频已经预加载过，直接开始过渡
+  // 加载错误：直接切换
+  newAudio.addEventListener('error', () => {
+    if (finished) return;
+    console.error('新 BGM 加载失败:', newSrc);
+    cleanup();
+    bgm.src = newSrc;
+    bgm.load();
+    bgm.volume = 1;
+    bgm.play().catch(() => showPlayModal());
+  }, { once: true });
+  
+  // 关键优化：用 canplay 而不是 canplaythrough
+  // canplay: 浏览器认为可以开始播放（通常只需要下载一小部分）
+  // canplaythrough: 浏览器认为可以完整播放（可能需要下载更多）
+  newAudio.addEventListener('canplay', startCrossfade, { once: true });
+  
+  // 如果新音频已经预加载完成，直接开始
   if (__bgmPreloadState[newSrc] === 'loaded') {
-    startTransition();
-  } else if (waitForLoad) {
-    // 直接进入某章：等待加载完成再开始过渡
-    newAudio.addEventListener('canplaythrough', startTransition, { once: true });
-    newAudio.addEventListener('error', () => {
-      if (finished) return;
-      console.error('新 BGM 加载失败:', newSrc);
-      cleanup();
-      bgm.src = newSrc;
-      bgm.load();
-      bgm.volume = 1;
-      bgm.play().catch(() => showPlayModal());
-    }, { once: true });
-  } else {
-    // 翻页切换：先开始旧音乐淡出，等加载好了再淡入新音乐
-    newAudio.addEventListener('canplaythrough', startTransition, { once: true });
-    startTransition();
-    
-    // 加载错误处理
-    newAudio.addEventListener('error', () => {
-      if (finished) return;
-      console.error('新 BGM 加载失败:', newSrc);
-      cleanup();
-      bgm.src = newSrc;
-      bgm.load();
-      bgm.volume = 1;
-      bgm.play().catch(() => showPlayModal());
-    }, { once: true });
-    
-    // 1.5 秒超时：不等了，直接切换
-    setTimeout(() => {
-      if (finished) return;
-      console.log('BGM crossfade 超时，直接切换:', newSrc);
-      newAudio.removeEventListener('canplaythrough', startTransition);
-      cleanup();
-      bgm.src = newSrc;
-      bgm.load();
-      bgm.volume = 1;
-      bgm.play().catch(() => showPlayModal());
-    }, 1500);
+    startCrossfade();
+  }
+  
+  // 加载失败兜底（waitForLoad 时用较长超时，翻页时用较短超时）
+  const timeout = waitForLoad ? 8000 : 3000;
+  setTimeout(() => {
+    if (crossfadeStarted || finished) return;
+    console.log('BGM 加载超时，直接切换:', newSrc);
+    cleanup();
+    bgm.src = newSrc;
+    bgm.load();
+    bgm.volume = 1;
+    bgm.play().catch(() => showPlayModal());
+  }, timeout);
+  
+  // 开始加载（流式播放）
+  newAudio.load();
+  
+  // 如果音频已经加载好了（从缓存），直接开始播放
+  if (newAudio.readyState >= 2) {
+    newAudio.play().catch(() => {});
   }
 }
 
@@ -770,7 +766,7 @@ async function init() {
   // 注入版本号
   const versionMark = document.querySelector('.version-mark');
   if (versionMark) {
-    versionMark.textContent = 'v1.0.22';
+    versionMark.textContent = 'v1.0.23';
   }
 }
 
