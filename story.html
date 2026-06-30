@@ -10,39 +10,6 @@
   <link rel="stylesheet" href="./src/shared/nav.css">
   <link rel="stylesheet" href="./src/shared/vinyl-player.css">
   <link rel="stylesheet" href="./src/shared/themes.css">
-  <script>
-  // ===== BGM 预加载（在 JS 模块加载前就开始）=====
-  // 直接给 <audio id="bgm"> 设置 src，让浏览器在页面解析时就开始加载
-  (function() {
-    var p = new URLSearchParams(location.search);
-    var id = p.get('id');
-    var ch = parseInt(p.get('ch')) || 0;
-    if (!id) return;
-
-    // 故事 ID → BGM URL 映射
-    var BGM_MAP = {
-      'story1': {
-        'default': './audio/见字如面.mp3',
-        'chapters': { '2': './audio/折戸伸治 - 鸟之诗 (八音盒版).mp3' }
-      },
-      'story2': { 'default': 'https://cdn.pixabay.com/download/audio/2022/10/25/audio_111422.mp3' },
-      'story3': { 'default': 'https://cdn.pixabay.com/download/audio/2022/11/15/audio_111422.mp3' }
-    };
-
-    var story = BGM_MAP[id];
-    if (!story) return;
-
-    var url = (story.chapters && story.chapters[ch]) || story.default;
-    if (!url) return;
-
-    // 直接给 DOM 中的 audio 元素设置 src，浏览器在页面加载时就开始下载
-    var bgm = document.getElementById('bgm');
-    if (bgm) {
-      bgm.src = url;
-      bgm.load();
-    }
-  })();
-  </script>
 </head>
 <body>
   <!-- 背景效果容器（动态插入） -->
@@ -60,6 +27,32 @@
     <span class="vinyl-hint">BGM</span>
   </div>
   <audio id="bgm" loop preload="auto"></audio>
+  <script>
+  // BGM 预加载：在 JS 模块加载前给 audio 设置 src，让浏览器立即开始下载
+  (function() {
+    var p = new URLSearchParams(location.search);
+    var id = p.get('id');
+    var ch = parseInt(p.get('ch')) || 0;
+    if (!id) return;
+    var BGM_MAP = {
+      'story1': {
+        'default': './audio/见字如面.mp3',
+        'chapters': { '2': './audio/折戸伸治 - 鸟之诗 (八音盒版).mp3' }
+      },
+      'story2': { 'default': 'https://cdn.pixabay.com/download/audio/2022/10/25/audio_111422.mp3' },
+      'story3': { 'default': 'https://cdn.pixabay.com/download/audio/2022/11/15/audio_111422.mp3' }
+    };
+    var story = BGM_MAP[id];
+    if (!story) return;
+    var url = (story.chapters && story.chapters[ch]) || story.default;
+    if (!url) return;
+    var bgm = document.getElementById('bgm');
+    if (bgm) {
+      bgm.src = url;
+      bgm.load();
+    }
+  })();
+  </script>
 
   <nav class="story-nav">
     <a href="./index.html" class="nav-back">← 返回书架</a>
