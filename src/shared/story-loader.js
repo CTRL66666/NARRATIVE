@@ -329,23 +329,24 @@ async function init() {
     sessionStorage.setItem('bgm_src', storyConfig.bgm);
 
     // 尝试自动播放
-    const playBtn = document.getElementById('bgmPlayBtn');
     const tryPlay = () => {
       bgm.play().then(() => {
         window.__bgmPlayed = true;
         sessionStorage.setItem('bgm_playing', 'true');
-        if (playBtn) playBtn.style.display = 'none';
       }).catch((err) => {
-        // 自动播放被阻止，显示播放按钮
+        // 自动播放被阻止，显示弹窗
         console.log('自动播放被阻止:', err.name);
-        if (playBtn) {
-          playBtn.style.display = 'block';
-          // 添加点击事件
-          playBtn.onclick = () => {
+        const modal = document.getElementById('bgmModal');
+        const modalBtn = document.getElementById('bgmModalBtn');
+        if (modal) {
+          modal.style.display = 'flex';
+        }
+        if (modalBtn) {
+          modalBtn.onclick = () => {
             bgm.play().then(() => {
               window.__bgmPlayed = true;
               sessionStorage.setItem('bgm_playing', 'true');
-              playBtn.style.display = 'none';
+              if (modal) modal.style.display = 'none';
             }).catch(() => {});
           };
         }
@@ -394,7 +395,7 @@ async function init() {
   // 注入版本号
   const versionMark = document.querySelector('.version-mark');
   if (versionMark) {
-    versionMark.textContent = 'v1.0.15';
+    versionMark.textContent = 'v1.0.16';
   }
 }
 
