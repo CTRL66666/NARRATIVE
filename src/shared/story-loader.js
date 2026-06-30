@@ -307,13 +307,37 @@ async function init() {
     const savedSrc = sessionStorage.getItem('bgm_src');
     const savedTime = parseFloat(sessionStorage.getItem('bgm_time') || '0');
     const wasPlaying = sessionStorage.getItem('bgm_playing') === 'true';
+    const userPaused = window.__bgmUserPaused;
+
+    // 统一显示弹窗的函数
+    const showPlayModal = () => {
+      const modal = document.getElementById('bgmModal');
+      const modalBtn = document.getElementById('bgmModalBtn');
+      if (modal && modal.style.display !== 'flex') {
+        modal.style.display = 'flex';
+      }
+      if (modalBtn && !modalBtn._hasClick) {
+        modalBtn._hasClick = true;
+        modalBtn.onclick = () => {
+          bgm.load();
+          bgm.play().then(() => {
+            window.__bgmPlayed = true;
+            sessionStorage.setItem('bgm_playing', 'true');
+            if (modal) modal.style.display = 'none';
+          }).catch(() => {});
+        };
+      }
+    };
 
     if (savedSrc === storyConfig.bgm) {
       // 同一故事内返回/刷新：恢复进度
       bgm.src = storyConfig.bgm;
+      bgm.load();
       function onCanplay() {
         bgm.currentTime = savedTime;
-        if (wasPlaying) bgm.play().catch(() => {});
+        if (wasPlaying && !userPaused) {
+          bgm.play().catch(() => showPlayModal());
+        }
       }
       bgm.addEventListener('canplay', onCanplay, { once: true });
       if (bgm.readyState >= 3) {
@@ -324,41 +348,46 @@ async function init() {
       sessionStorage.removeItem('bgm_time');
       sessionStorage.removeItem('bgm_playing');
       bgm.src = storyConfig.bgm;
+      bgm.load();
     }
 
     sessionStorage.setItem('bgm_src', storyConfig.bgm);
 
-    // 尝试自动播放
-    const tryPlay = () => {
-      bgm.play().then(() => {
-        window.__bgmPlayed = true;
-        sessionStorage.setItem('bgm_playing', 'true');
-      }).catch((err) => {
-        // 自动播放被阻止，显示弹窗
-        console.log('自动播放被阻止:', err.name);
-        const modal = document.getElementById('bgmModal');
-        const modalBtn = document.getElementById('bgmModalBtn');
-        if (modal) {
-          modal.style.display = 'flex';
-        }
-        if (modalBtn) {
-          modalBtn.onclick = () => {
-            bgm.play().then(() => {
-              window.__bgmPlayed = true;
-              sessionStorage.setItem('bgm_playing', 'true');
-              if (modal) modal.style.display = 'none';
-            }).catch(() => {});
-          };
-        }
-      });
-    };
+    // 尝试自动播放（仅用户未手动暂停时）
+    if (!userPaused) {
+      const tryPlay = () => {
+        bgm.play().then(() => {
+          window.__bgmPlayed = true;
+          sessionStorage.setItem('bgm_playing', 'true');
+        }).catch((err) => {
+          console.log('自动播放被阻止:', err.name);
+          showPlayModal();
+        });
+      };
 
-    // 如果音频已经加载，立即尝试播放
-    if (bgm.readyState >= 3) {
-      tryPlay();
-    } else {
-      // 等待音频加载完成
-      bgm.addEventListener('canplay', tryPlay, { once: true });
+      // 3秒超时兜底：无论音频加载状态如何，超时后显示弹窗
+      let playTimeout = setTimeout(() => {
+        console.log('音频播放超时，显示弹窗');
+        showPlayModal();
+      }, 3000);
+
+      // 如果音频已经加载，立即尝试播放
+      if (bgm.readyState >= 3) {
+        tryPlay();
+      } else {
+        // 等待音频加载完成
+        bgm.addEventListener('canplay', () => {
+          clearTimeout(playTimeout);
+          tryPlay();
+        }, { once: true });
+      }
+
+      // 音频加载失败也显示弹窗
+      bgm.addEventListener('error', () => {
+        clearTimeout(playTimeout);
+        console.log('音频加载失败，显示弹窗');
+        showPlayModal();
+      }, { once: true });
     }
   }
 
