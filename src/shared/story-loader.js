@@ -9,19 +9,21 @@ const isAndroidWeixin = isWeixin && isAndroid;
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 const isMobile = isAndroid || isIOS;
 
-// 全局事件监听器（兜底：如果 AudioContext 未解锁，等待用户点击）
-// 注意：scroll/touchmove 不算用户手势，不能解锁音频
+// 待播放的 BGM（当自动播放失败时保存）
+let pendingBgm = null;
+
+// 在模块加载时立即绑定事件监听器（不等待 init() 异步完成）
+// 用户点击页面任意位置时，如果 pendingBgm 存在，则播放
 function onUserClick(e) {
-  if (window.__bgmPlayed || window.__bgmUserPaused) return;
+  if (window.__bgmUserPaused) return;
   
-  const bgm = document.getElementById('bgm');
-  if (!bgm || !bgm.src) return;
-  
-  // 用户点击，直接尝试播放
-  bgm.play().then(() => {
-    window.__bgmPlayed = true;
-    sessionStorage.setItem('bgm_playing', 'true');
-  }).catch(() => {});
+  if (pendingBgm && pendingBgm.src) {
+    pendingBgm.play().then(() => {
+      window.__bgmPlayed = true;
+      sessionStorage.setItem('bgm_playing', 'true');
+      pendingBgm = null;
+    }).catch(() => {});
+  }
   
   // 移除监听器
   document.removeEventListener('touchstart', onUserClick);
@@ -353,42 +355,21 @@ async function init() {
       sessionStorage.removeItem('bgm_time');
       sessionStorage.removeItem('bgm_playing');
       bgm.src = storyConfig.bgm;
-      // 新故事也绑定 canplay，音频加载完成后尝试播放
-      bgm.addEventListener('canplay', function onNewStoryCanplay() {
-        bgm.play().catch(() => {});
-      }, { once: true });
     }
 
     sessionStorage.setItem('bgm_src', storyConfig.bgm);
 
-    // 使用首页创建的 AudioContext（如果已解锁）
-    if (window.__sharedAudioContext && window.__sharedAudioContext.state === 'running') {
-      try {
-        // 检查是否已经创建过 MediaElementSource
-        if (!bgm.__mediaElementSource) {
-          const source = window.__sharedAudioContext.createMediaElementSource(bgm);
-          source.connect(window.__sharedAudioContext.destination);
-          bgm.__mediaElementSource = true;
-        }
-      } catch (e) {
-        console.log('MediaElementSource 已存在或创建失败:', e);
-      }
-      
-      // AudioContext 已解锁，直接尝试播放
-      // 注意：这里不放在异步回调中，直接同步调用
-      const playPromise = bgm.play();
-      if (playPromise) {
-        playPromise.then(() => {
-          sessionStorage.setItem('bgm_playing', 'true');
-        }).catch(() => {
-          // 如果音频还没加载完成，play() 会返回 pending 的 Promise
-          // 浏览器会在加载完成后自动播放
-          console.log('音频加载中，将在加载完成后自动播放');
-        });
-      }
-    } else if (!isWeixin && !isMobile) {
-      // 桌面端直接尝试
-      bgm.play().catch(() => {});
+    // 立即尝试播放（同步调用）
+    const playPromise = bgm.play();
+    if (playPromise) {
+      playPromise.then(() => {
+        window.__bgmPlayed = true;
+        sessionStorage.setItem('bgm_playing', 'true');
+      }).catch(() => {
+        // 播放被阻止，保存到 pendingBgm，等待用户点击
+        pendingBgm = bgm;
+        console.log('BGM 自动播放被阻止，等待用户点击...');
+      });
     }
   }
 
@@ -425,7 +406,7 @@ async function init() {
   // 注入版本号
   const versionMark = document.querySelector('.version-mark');
   if (versionMark) {
-    versionMark.textContent = 'v1.0.13';
+    versionMark.textContent = 'v1.0.14';
   }
 }
 

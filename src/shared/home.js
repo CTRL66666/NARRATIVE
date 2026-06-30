@@ -54,24 +54,7 @@ function initPageFlip() {
       const storyId = card.dataset.story;
       const story = config.stories.find(s => s.id === storyId);
 
-      // 音频解锁：在用户手势中创建 AudioContext，故事页才能自动播放
-      // 微信/移动端需要当前页面有实际音频播放记录
-      if (!window.__sharedAudioContext) {
-        try {
-          window.__sharedAudioContext = new (window.AudioContext || window.webkitAudioContext)();
-          console.log('AudioContext 已创建');
-        } catch (e) {
-          console.error('AudioContext 创建失败:', e);
-        }
-      }
-      
-      // 播放无声音频解锁（必须实际播放才能解锁）
-      const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=');
-      silentAudio.play().then(() => {
-        console.log('音频上下文已解锁');
-      }).catch(() => {});
-      
-      // 如果目标故事有 BGM，预加载音频文件
+      // 预加载目标故事的音频文件（减少故事页加载时间）
       if (story && story.bgm) {
         const preloadAudio = new Audio(story.bgm);
         preloadAudio.preload = 'auto';
@@ -112,6 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // 注入版本号
   const versionMark = document.querySelector('.version-mark');
   if (versionMark) {
-    versionMark.textContent = 'v1.0.13';
+    versionMark.textContent = 'v1.0.14';
   }
 });
