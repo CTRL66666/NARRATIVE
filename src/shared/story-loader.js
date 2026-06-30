@@ -135,8 +135,19 @@ function handleChapterBgm(data, chapterIndex) {
   const targetBgm = chapter.bgm || storyConfig.bgm;
   if (!targetBgm) return;
   
+  // 辅助函数：从 URL 提取文件名（解码中文）
+  function getFileName(url) {
+    try {
+      return decodeURIComponent(url.split('/').pop().split('?')[0]);
+    } catch {
+      return url.split('/').pop().split('?')[0];
+    }
+  }
+  
   // 如果当前已经在播放目标音乐，不做任何操作
-  if (bgm.src && bgm.src.includes(targetBgm.split('/').pop().split('?')[0])) {
+  const currentFileName = getFileName(bgm.src || '');
+  const targetFileName = getFileName(targetBgm);
+  if (currentFileName === targetFileName) {
     return;
   }
   
