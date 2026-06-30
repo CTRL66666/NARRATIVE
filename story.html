@@ -3,77 +3,97 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>加载中...</title>
+  <title>故事阅读</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="./assets/story-trhtWfuU.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/config-BIbxg2R-.js">
-  <link rel="stylesheet" crossorigin href="./assets/story-Bj12pYhE.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./src/shared/novel-skeleton.css">
+  <link rel="stylesheet" href="./src/shared/nav.css">
+  <link rel="stylesheet" href="./src/shared/vinyl-player.css">
+  <link rel="stylesheet" href="./src/shared/themes.css">
+  <script type="module" src="./src/shared/story-loader.js"></script>
+  <style>
+    /* 播放按钮脉冲提示 */
+    .hint-pulse { animation: pulse 2s infinite; }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 5px rgba(255,255,255,0.3); }
+      50% { box-shadow: 0 0 20px rgba(255,255,255,0.8); }
+    }
+    /* 弹窗样式 */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: #2a1f1a;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 24px 32px;
+      text-align: center;
+      max-width: 320px;
+    }
+    .modal-content h3 { margin: 0 0 12px; color: #e8d8c8; font-size: 1.1rem; }
+    .modal-content p { margin: 0 0 20px; color: rgba(232,216,200,0.7); font-size: 0.9rem; }
+    .modal-btn {
+      background: #8a5e3c;
+      color: #fff;
+      border: none;
+      border-radius: 20px;
+      padding: 10px 24px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .modal-btn:hover { background: #a07050; }
+  </style>
 </head>
-<body>
-  <!-- 背景效果容器（动态插入） -->
-  <div id="bgEffects"></div>
+<body data-story="story1">
+  <div class="bg-animation" id="bgAnimation"></div>
 
-  <!-- 左上角唱片播放器 -->
-  <div class="vinyl-player">
-    <div class="vinyl-disc" id="vinylDisc" title="点击播放/暂停">
-      <div class="vinyl-label-text" id="vinylLabel">BGM</div>
-      <div class="vinyl-play-icon"></div>
-      <div class="vinyl-pause-icon">
-        <span></span><span></span>
-      </div>
+  <div class="modal-overlay" id="bgmModal">
+    <div class="modal-content">
+      <h3>🎵 开启音乐体验</h3>
+      <p>点击按钮开始播放故事背景乐</p>
+      <button class="modal-btn" id="bgmModalBtn">播放音乐</button>
     </div>
-    <span class="vinyl-hint">BGM</span>
   </div>
-  <audio id="bgm" loop preload="auto"></audio>
 
-  <nav class="story-nav">
-    <a href="./index.html" class="nav-back">← 返回书架</a>
-    <div class="nav-center">
-      <span class="story-tag" id="storyTag">标签</span>
-      <span class="story-nav-title" id="storyTitle">标题</span>
+  <div class="page-flip-overlay" id="pageFlipOverlay">
+    <div class="page-flip-book">
+      <div class="page-flip-left"></div>
+      <div class="page-flip-right"></div>
     </div>
-    <a href="#" class="nav-next" id="nextLink">下一篇 →</a>
-  </nav>
+  </div>
 
-  <main class="novel-page">
-    <div class="novel-paper">
-      <div class="novel-gutter"></div>
-      <header class="novel-header"></header>
-      <article class="novel-content"></article>
-    </div>
-  </main>
+  <div class="story-wrapper" id="storyWrapper">
+    <div class="story-container" id="storyContent"></div>
+  </div>
 
-  <section class="novel-nav-footer"></section>
-
-  <section class="comments-section">
-    <h2 class="comments-title">读者留言</h2>
-    <div class="comments-container" id="commentsContainer">
-      <p class="comments-loading">正在加载评论……</p>
-    </div>
-    <form class="comment-form" id="commentForm">
-      <h3>写下你的留言</h3>
-      <input type="text" id="commentName" placeholder="你的昵称（选填）" maxlength="30">
-      <textarea id="commentText" placeholder="写下你的感想……" required maxlength="500" rows="4"></textarea>
-      <div class="comment-form-footer">
-        <span class="comment-tip">评论将存储在 GitHub 中</span>
-        <button type="submit" class="comment-submit">发表留言</button>
+  <div class="page-markers" id="pageMarkers"></div>
+  
+  <div class="nav-controls">
+    <button class="nav-btn" id="prevBtn" title="上一页 (←)">
+      <svg viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
+    </button>
+    <div class="vinyl-container" id="vinylContainer" title="点击暂停/播放">
+      <div class="vinyl-disc" id="vinylDisc">
+        <div class="vinyl-label" id="vinylLabel">加载中...</div>
       </div>
-    </form>
-  </section>
+    </div>
+    <button class="nav-btn" id="nextBtn" title="下一页 (→)">
+      <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+    </button>
+  </div>
 
-  <footer class="story-footer">
-    <p> 我的故事集</p>
+  <a href="index.html" class="back-btn" title="返回书架">← 返回书架</a>
+  <audio id="bgm" loop></audio>
+
+  <footer class="site-footer" style="position: fixed; bottom: 8px; right: 16px; opacity: 0.5;">
     <p class="version-mark">v1.0.17</p>
   </footer>
-
-  <!-- 音频播放弹窗（自动播放失败时显示） -->
-  <div id="bgmModal" class="bgm-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;justify-content:center;align-items:center;">
-    <div class="bgm-modal-content" style="background:#fff;padding:24px 32px;border-radius:12px;text-align:center;max-width:280px;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
-      <p style="margin:0 0 16px 0;font-size:15px;color:#333;line-height:1.6;">自动播放音乐失败<br>建议您点击下方打开音乐</p>
-      <button id="bgmModalBtn" style="padding:10px 28px;background:#8B4513;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;">打开音乐</button>
-    </div>
-  </div>
-
 </body>
 </html>
