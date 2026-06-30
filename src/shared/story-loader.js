@@ -84,8 +84,11 @@ function setupChapterNavigation(data) {
     url.searchParams.set('ch', targetIndex);
     history.pushState({ chapter: targetIndex }, '', url);
     
-    // 重新渲染内容（不触碰 BGM）
+    // 重新渲染内容
     renderStory(data, storyId, targetIndex);
+    
+    // 检查章节 BGM 触点
+    handleChapterBgm(data, targetIndex);
   });
   
   // 监听移动端下拉选择器
@@ -104,6 +107,9 @@ function setupChapterNavigation(data) {
     history.pushState({ chapter: targetIndex }, '', url);
     
     renderStory(data, storyId, targetIndex);
+    
+    // 检查章节 BGM 触点
+    handleChapterBgm(data, targetIndex);
   });
   
   // 浏览器后退/前进按钮支持
@@ -111,7 +117,87 @@ function setupChapterNavigation(data) {
     const newParams = new URLSearchParams(window.location.search);
     const newIndex = parseInt(newParams.get('ch')) || 0;
     renderStory(data, storyId, newIndex);
+    
+    // 检查章节 BGM 触点
+    handleChapterBgm(data, newIndex);
   });
+}
+
+// 章节 BGM 触点处理：切换章节时检查是否需要过渡音乐
+function handleChapterBgm(data, chapterIndex) {
+  const bgm = document.getElementById('bgm');
+  if (!bgm) return;
+  
+  const chapter = data.chapters[chapterIndex];
+  if (!chapter) return;
+  
+  // 章节 bgm 优先，否则用故事默认
+  const targetBgm = chapter.bgm || storyConfig.bgm;
+  if (!targetBgm) return;
+  
+  // 如果当前已经在播放目标音乐，不做任何操作
+  if (bgm.src && bgm.src.includes(targetBgm.split('/').pop().split('?')[0])) {
+    return;
+  }
+  
+  const wasPlaying = !bgm.paused;
+  const userPaused = window.__bgmUserPaused;
+  
+  // 清除旧进度，从新章节开始
+  sessionStorage.removeItem('bgm_time');
+  sessionStorage.removeItem('bgm_playing');
+  
+  bgm.src = targetBgm;
+  bgm.load();
+  
+  // 更新唱片标签
+  const label = document.getElementById('vinylLabel');
+  if (label) {
+    label.textContent = chapter.bgmLabel || storyConfig.bgmLabel || storyConfig.title;
+  }
+  
+  sessionStorage.setItem('bgm_src', targetBgm);
+  
+  // 如果之前正在播放且用户没有手动暂停，继续播放
+  if (wasPlaying && !userPaused) {
+    const tryPlay = () => {
+      bgm.play().then(() => {
+        window.__bgmPlayed = true;
+        sessionStorage.setItem('bgm_playing', 'true');
+      }).catch(() => {
+        // 自动播放被阻止，显示弹窗
+        const modal = document.getElementById('bgmModal');
+        const modalBtn = document.getElementById('bgmModalBtn');
+        const vinylDisc = document.getElementById('vinylDisc');
+        if (modal && modal.style.display !== 'flex') {
+          modal.style.display = 'flex';
+        }
+        if (vinylDisc) vinylDisc.classList.add('hint-pulse');
+        if (modalBtn && !modalBtn._hasClick) {
+          modalBtn._hasClick = true;
+          modalBtn.onclick = () => {
+            bgm.load();
+            bgm.play().then(() => {
+              window.__bgmPlayed = true;
+              sessionStorage.setItem('bgm_playing', 'true');
+              if (modal) modal.style.display = 'none';
+              if (vinylDisc) vinylDisc.classList.remove('hint-pulse');
+            }).catch(() => {});
+          };
+        }
+      });
+    };
+    
+    if (bgm.readyState >= 3) {
+      tryPlay();
+    } else {
+      bgm.addEventListener('canplay', tryPlay, { once: true });
+    }
+    
+    bgm.addEventListener('error', () => {
+      console.log('章节 BGM 加载失败:', targetBgm);
+    }, { once: true });
+  }
 }
 
 // ===== 内联评论模块（避免 Vite 缓存问题）=====
@@ -418,6 +504,9 @@ async function init() {
   const initialChapter = parseInt(params.get('ch')) || 0;
   renderStory(data, storyId, initialChapter);
   
+  // 检查初始章节的 BGM 触点（直接进入某章时也要切换）
+  handleChapterBgm(data, initialChapter);
+  
   // 设置章节导航（无刷新切换）
   setupChapterNavigation(data);
 
@@ -430,7 +519,7 @@ async function init() {
   // 注入版本号
   const versionMark = document.querySelector('.version-mark');
   if (versionMark) {
-    versionMark.textContent = 'v1.0.16';
+    versionMark.textContent = 'v1.0.18';
   }
 }
 
