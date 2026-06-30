@@ -55,6 +55,7 @@ export function initVinylPlayer(discId, audioId) {
 
   bgm.addEventListener('play', () => {
     vinylDisc.classList.add('playing');
+    vinylDisc.classList.remove('hint-pulse');
     sessionStorage.setItem('bgm_playing', 'true');
     startSaving();
   });

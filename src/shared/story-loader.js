@@ -313,8 +313,13 @@ async function init() {
     const showPlayModal = () => {
       const modal = document.getElementById('bgmModal');
       const modalBtn = document.getElementById('bgmModalBtn');
+      const vinylDisc = document.getElementById('vinylDisc');
       if (modal && modal.style.display !== 'flex') {
         modal.style.display = 'flex';
+      }
+      // 唱片脉冲光效提示
+      if (vinylDisc) {
+        vinylDisc.classList.add('hint-pulse');
       }
       if (modalBtn && !modalBtn._hasClick) {
         modalBtn._hasClick = true;
@@ -324,6 +329,7 @@ async function init() {
             window.__bgmPlayed = true;
             sessionStorage.setItem('bgm_playing', 'true');
             if (modal) modal.style.display = 'none';
+            if (vinylDisc) vinylDisc.classList.remove('hint-pulse');
           }).catch(() => {});
         };
       }
