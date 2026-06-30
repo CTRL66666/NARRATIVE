@@ -659,9 +659,21 @@ async function init() {
       modalBtn._onclickSet = true;
       modalBtn.onclick = () => {
         window.__bgmModalClicked = true;
-        hidePlayModal();
-        // 尝试播放，不等待结果
-        bgm.play().catch(() => {});
+
+        // 如果音频已加载（readyState >= 2 表示有足够数据开始播放）
+        if (bgm.readyState >= 2) {
+          hidePlayModal();
+          bgm.play().catch(() => {});
+          return;
+        }
+
+        // 音频还没加载好：显示加载中，等待加载完成自动播放
+        showBgmLoading('🎵 音乐加载中...');
+        bgm.addEventListener('canplay', () => {
+          hideBgmLoading();
+          hidePlayModal();
+          bgm.play().catch(() => {});
+        }, { once: true });
       };
     }
 
@@ -702,8 +714,11 @@ async function init() {
         });
       };
 
-      // 如果音频已经加载，立即尝试播放
-      if (bgm.readyState >= 3) {
+      // 检查预加载状态：如果预加载完成，直接播放
+      if (window.__preloadedBgm === storyConfig.bgm && window.__preloadedBgmReady) {
+        console.log('预加载完成，立即尝试播放');
+        tryPlay();
+      } else if (bgm.readyState >= 3) {
         tryPlay();
       } else {
         // 等待音频加载完成
@@ -765,7 +780,7 @@ async function init() {
   // 注入版本号
   const versionMark = document.querySelector('.version-mark');
   if (versionMark) {
-    versionMark.textContent = 'v1.0.25';
+    versionMark.textContent = 'v1.0.26';
   }
 }
 

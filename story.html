@@ -11,25 +11,42 @@
   <link rel="stylesheet" href="./src/shared/vinyl-player.css">
   <link rel="stylesheet" href="./src/shared/themes.css">
   <script>
-  // 预加载当前故事可能需要的 BGM（在 JS 加载前开始）
+  // ===== BGM 预加载（在 JS 模块加载前就开始）=====
+  // 用 Audio 元素预加载，确保与主 <audio id="bgm"> 共享浏览器缓存
   (function() {
-    const p = new URLSearchParams(location.search);
-    const id = p.get('id');
-    const ch = parseInt(p.get('ch')) || 0;
+    var p = new URLSearchParams(location.search);
+    var id = p.get('id');
+    var ch = parseInt(p.get('ch')) || 0;
     if (!id) return;
-    
-    function addPreload(url) {
-      if (!url) return;
-      var link = document.createElement('link');
-      link.rel = 'preload';
-      link.as = 'audio';
-      link.href = url;
-      document.head.appendChild(link);
-    }
-    
-    // 先预加载所有可能的 BGM（浏览器会智能去重，不会重复下载）
-    addPreload('./audio/见字如面.mp3');
-    addPreload('./audio/折戸伸治 - 鸟之诗 (八音盒版).mp3');
+
+    // 故事 ID → BGM URL 映射（与 config.json 和 data.json 保持一致）
+    var BGM_MAP = {
+      'story1': {
+        'default': './audio/见字如面.mp3',
+        'chapters': { '2': './audio/折戸伸治 - 鸟之诗 (八音盒版).mp3' }
+      },
+      'story2': { 'default': 'https://cdn.pixabay.com/download/audio/2022/10/25/audio_111422.mp3' },
+      'story3': { 'default': 'https://cdn.pixabay.com/download/audio/2022/11/15/audio_111422.mp3' }
+    };
+
+    var story = BGM_MAP[id];
+    if (!story) return;
+
+    var url = (story.chapters && story.chapters[ch]) || story.default;
+    if (!url) return;
+
+    // 用 Audio 元素预加载，和主 audio 元素完全相同的缓存机制
+    var a = new Audio();
+    a.preload = 'auto';
+    a.src = url;
+    a.load();
+
+    // 记录到全局，供 JS 检测
+    window.__preloadedBgm = url;
+    window.__preloadedBgmReady = false;
+    a.addEventListener('canplay', function() {
+      window.__preloadedBgmReady = true;
+    }, { once: true });
   })();
   </script>
 </head>

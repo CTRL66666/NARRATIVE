@@ -48,18 +48,24 @@ function initPageFlip() {
   const bookCards = document.querySelectorAll('.book-card');
 
   bookCards.forEach(card => {
+    // 鼠标悬停时预加载音频（提前加载，减少故事页等待时间）
+    let preloaded = false;
+    card.addEventListener('mouseenter', () => {
+      if (preloaded) return;
+      const storyId = card.dataset.story;
+      const story = config.stories.find(s => s.id === storyId);
+      if (story && story.bgm) {
+        preloaded = true;
+        const a = new Audio();
+        a.preload = 'auto';
+        a.src = story.bgm;
+        a.load();
+      }
+    });
+
     card.addEventListener('click', (e) => {
       e.preventDefault();
       const href = card.getAttribute('href');
-      const storyId = card.dataset.story;
-      const story = config.stories.find(s => s.id === storyId);
-
-      // 预加载目标故事的音频文件（减少故事页加载时间）
-      if (story && story.bgm) {
-        const preloadAudio = new Audio(story.bgm);
-        preloadAudio.preload = 'auto';
-        preloadAudio.load();
-      }
 
       if (pageFlipOverlay) {
         pageFlipOverlay.classList.add('active', 'flipping-out');
@@ -95,6 +101,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // 注入版本号
   const versionMark = document.querySelector('.version-mark');
   if (versionMark) {
-    versionMark.textContent = 'v1.0.16';
+    versionMark.textContent = 'v1.0.26';
   }
 });
