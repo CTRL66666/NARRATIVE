@@ -199,3 +199,26 @@
   opacity: 1;
   border-color: transparent transparent transparent rgba(255, 200, 100, 0.9);
 }
+
+/* 加载中动画：唱片外围旋转光环 */
+@keyframes loadingRing {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.vinyl-disc.loading::before {
+  background: var(--vinyl-label, #666);
+  box-shadow: 0 0 0 2px rgba(180, 140, 80, 0.6);
+  animation: loadingRing 0.6s linear infinite;
+}
+
+.vinyl-disc.loading {
+  opacity: 0.8;
+}
+
+/* 加载中标签文字 */
+.vinyl-disc.loading + .vinyl-hint,
+.vinyl-player:has(.vinyl-disc.loading) .vinyl-hint {
+  opacity: 1;
+  color: var(--vinyl-hint-loading, #b49050);
+}
