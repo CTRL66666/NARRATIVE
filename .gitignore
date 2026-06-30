@@ -1,0 +1,22 @@
+# Build outputs
+dist/
+assets/*.js
+assets/*.css
+
+# Dependencies
+node_modules/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temp files
+*.tmp
+*.temp
