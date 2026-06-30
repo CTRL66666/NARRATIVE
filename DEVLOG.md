@@ -4,6 +4,192 @@
 
 ---
 
+## 2026-06-30 — v1.0.19 大修复：构建产物污染 + node_modules 提交 + DOM 结构丢失
+
+### ⚠️ 严重问题：故事页完全空白
+
+### 问题现象
+1. **线上 story.html 页面完全空白**：只有左上角唱片和"返回书架"链接，没有标题、作者、正文内容
+2. **本地构建正常但线上不显示**：`npm run build` 成功，但 `dist/story.html` 缺少 `novel-header`、`novel-content` 等 DOM 结构
+3. **GitHub Actions 构建失败**：`vite: Permission denied` 错误，无法完成构建部署
+4. **版本号混乱**：线上显示 `v1.0.19` 但内容来自旧版本，缓存和源码不一致
+
+### 根本原因分析
+
+#### 1. `node_modules/` 被提交到仓库（最大错误）
+- 本地 `npm install` 后，`node_modules/` 没有被 `.gitignore` 忽略
+- 我在 Windows 上运行 `npm install`，`node_modules/.bin/vite` 是 Windows 批处理文件（`.cmd`）
+- GitHub Actions（Linux）拉取仓库后，直接读取仓库中的 `node_modules/.bin/vite`（Windows 权限），无法执行
+- 导致 `npm run build` 时 `vite: Permission denied`
+
+**为什么我没发现：**
+- 之前手动构建部署时，`node_modules` 在本地，构建没问题
+- 切换到 Actions 自动部署时，没有检查仓库中是否有 `node_modules`
+- 多次失败后才想到权限问题，浪费大量时间
+
+#### 2. `cp -r dist/* .` 污染源码（循环错误）
+- 手动构建部署时，我把 `dist/` 中的构建产物复制到根目录
+- `index.html` 和 `story.html` 变成了引用 `assets/` 的构建产物版本
+- 下次 Actions 构建时，Vite 读取的是被污染的 HTML，找不到旧的 `assets/` 文件
+- 构建失败，产生 `Could not resolve "./assets/main-D-XSfEdW.js"` 错误
+
+**为什么循环错误：**
+- 构建失败 → 我手动构建部署 → 复制 `dist/` 到根目录 → 再次提交构建产物
+- 构建产物又被 Actions 读取 → 再次失败 → 恶性循环
+
+#### 3. `story.html` DOM 结构丢失（修复时引入的新错误）
+- 在恢复源码时，我重写了 `story.html`，但没有参考正确的版本
+- 我写的版本只有 `#storyContent` 空 div，缺少 `novel-header`、`novel-content`、`.comments-section` 等 DOM 结构
+- `story-renderer.js` 查找 `.novel-header`、`.novel-content` 等元素，找不到 → 内容无法渲染
+- 页面只显示导航和唱片，正文完全空白
+
+**为什么引入新错误：**
+- 急于修复，没有先检查 `git show b436444:story.html` 的正确结构
+- 凭记忆重写，遗漏了关键 DOM 元素
+- 没有验证截图中的布局是否与代码一致
+
+#### 4. 版本号混乱
+- `b00078d`（v1.0.17）和 `b436444`（v1.0.19）的构建产物混在 `assets/` 中
+- `assets/` 中有 `story-trhtWfuU.js`（v1.0.17）和 `story-DcS8jH-u.js`（v1.0.19）
+- 构建产物文件名不同（Vite 的 content-hash），导致引用不一致
+- 线上和本地构建产物不同步，产生 `404` 或 `404` 错误
+
+### 修复方案（完整步骤）
+
+#### 步骤 1：从仓库中移除 `node_modules`
+```bash
+git rm -r --cached node_modules
+git commit -m "fix: 从仓库中移除 node_modules"
+```
+- 删除了 197 个文件，-199KB
+- 本地保留 `node_modules/`（用于本地构建），但不再提交到 Git
+
+#### 步骤 2：从 `b436444` 恢复完整源码
+```bash
+# 恢复正确的 HTML 文件（源码引用）
+git show b436444:index.html > index.html
+git show b436444:story.html > story.html
+# 恢复 src/ 目录
+git checkout b436444 -- src/
+```
+
+正确的 `index.html`：
+```html
+<link rel="stylesheet" href="./src/style.css">
+<script type="module" src="./src/shared/home.js"></script>
+```
+
+正确的 `story.html`：
+```html
+<link rel="stylesheet" href="./src/shared/novel-skeleton.css">
+<link rel="stylesheet" href="./src/shared/nav.css">
+<link rel="stylesheet" href="./src/shared/vinyl-player.css">
+<link rel="stylesheet" href="./src/shared/themes.css">
+<script type="module" src="./src/shared/story-loader.js"></script>
+<!-- 包含完整的 DOM 结构 -->
+<main class="novel-page">
+  <div class="novel-paper">
+    <div class="novel-gutter"></div>
+    <header class="novel-header"></header>
+    <article class="novel-content"></article>
+  </div>
+</main>
+<section class="comments-section">...</section>
+```
+
+#### 步骤 3：清理多余的构建产物
+```bash
+# 删除旧版本的构建产物（避免混淆）
+rm -f assets/config-BIbxg2R--DzfPGOwd.js
+rm -f assets/main-D-XSfEdW.js
+rm -f assets/data-CVfYzPhi-Dqa5CdRL.js
+rm -f assets/story-BgWuU_tR.js
+rm -f assets/story-CuGftS2S.js
+rm -f assets/story-DcS8jH-u.js
+```
+
+#### 步骤 4：修正 Actions 配置
+```yaml
+- name: Install dependencies
+  run: npm install  # 不是 npm ci（因为 node_modules 已移除）
+
+- name: Build
+  run: npx vite build  # 不是 npm run build（避免权限问题）
+```
+
+#### 步骤 5：本地构建验证
+```bash
+rm -rf dist
+npm run build
+# 检查 dist/story.html 是否包含 novel-header、novel-content
+grep -o "novel-header\|novel-content" dist/story.html
+```
+
+### 验证清单（每次修复后必须检查）
+
+1. **HTML 文件引用检查**：
+   - `index.html` 引用 `./src/style.css` 和 `./src/shared/home.js`（不是 `assets/`）
+   - `story.html` 引用 `./src/shared/*.css` 和 `./src/shared/story-loader.js`（不是 `assets/`）
+
+2. **DOM 结构检查**：
+   - `story.html` 包含 `<header class="novel-header">`、`<article class="novel-content">`、`<section class="comments-section">`
+   - 检查截图中的布局是否与代码一致
+
+3. **构建产物检查**：
+   - `npm run build` 成功，无错误
+   - `dist/story.html` 包含所有必要的 DOM 元素
+   - `assets/` 中只有一个版本的 `story-*.js` 和 `main-*.js`（无重复）
+
+4. **Git 状态检查**：
+   - `git status` 没有 `node_modules/` 文件
+   - `git ls-files | grep "^node_modules"` 返回空
+   - 没有旧的构建产物被意外提交
+
+5. **线上验证**：
+   - 检查 `<title>` 标签是否变化（确认缓存刷新）
+   - 检查 `version-mark` 是否与提交版本一致
+   - 加 `?r=随机数` 参数绕过缓存
+
+### 重要教训
+
+#### 1. 永远不要提交 `node_modules/` 到仓库
+- 即使 `.gitignore` 中有 `node_modules/`，也可能因为本地配置问题被提交
+- 提交前检查：`git ls-files | grep "^node_modules"`
+- 如果已提交：`git rm -r --cached node_modules`，然后提交删除
+
+#### 2. 永远不要手动 `cp -r dist/* .` 到根目录
+- 这会覆盖 `index.html` 和 `story.html`，破坏源码引用
+- 构建产物和源码必须分开：
+  - 源码 → Actions 自动构建 → 部署 `dist/`
+  - 或：手动构建后，只复制 `dist/` 中的新文件，不覆盖 HTML 源码
+
+#### 3. 恢复源码时先参考正确的版本
+- 不要凭记忆重写 HTML，先查看历史版本：`git show b436444:story.html`
+- 检查截图中的布局是否与代码一致
+- 对比截图中的 DOM 结构（如 `novel-header`、`novel-content`）
+
+#### 4. 版本号一致性
+- `index.html` 和 `story.html` 的 `version-mark` 必须一致
+- 每次修改后 +0.0.1，用于确认是否拿到最新版本
+- 线上版本号 ≠ 本地版本号 → 说明缓存未刷新或部署失败
+
+#### 5. 构建产物文件名管理
+- Vite 使用 content-hash 生成文件名，每次构建可能不同
+- 不要在 `assets/` 中保留多个版本的构建产物（会混淆）
+- 定期清理旧的 `assets/` 文件，只保留最新构建产物
+
+#### 6. GitHub Actions 调试
+- 构建失败时，先检查 Actions 日志的具体错误（`vite: Permission denied`）
+- 不要反复修改 `.github/workflows/deploy.yml` 猜测问题
+- 先本地排查（`npm run build` 是否成功），再检查 Actions 环境差异
+
+#### 7. 缓存刷新
+- GitHub Pages CDN 有 10 分钟缓存，但可能需要更长时间
+- 修改标题或添加随机参数 `?r=随机数` 强制刷新
+- 如果标题没变，说明部署没有成功，需要检查 Actions 状态
+
+---
+
 ## 2026-06-29 — v1.0.6 评论功能修复：零门槛本地存储
 
 ### 问题现象
@@ -180,3 +366,54 @@ v1.0.3 修复溢出时，把导航栏 padding 和字体缩得太小（`padding: 
 3. 需要手动管理 `dist/` 到根目录的复制流程
 
 ---
+
+## 附录：技术栈和工具
+
+- **构建工具**：Vite 5.4.21
+- **包管理器**：npm 10.8.2
+- **Node.js**：v20.20.2
+- **部署平台**：GitHub Pages（GitHub Actions 自动构建）
+- **字体**：Google Fonts（Noto Serif SC、ZCOOL XiaoWei）
+- **CSS 框架**：原生 CSS（CSS 变量驱动主题）
+- **版本控制**：Git（main 分支）
+
+## 附录：项目目录结构
+
+```
+my-stories/
+├── src/
+│   ├── style.css              # 首页样式
+│   ├── shared/
+│   │   ├── home.js            # 首页渲染逻辑
+│   │   ├── story-loader.js    # 故事页加载逻辑（含章节 BGM 切换）
+│   │   ├── story-renderer.js  # 故事内容渲染
+│   │   ├── vinyl-player.js    # 唱片播放器
+│   │   ├── novel-skeleton.css # 小说排版骨架
+│   │   ├── nav.css            # 导航栏样式
+│   │   ├── vinyl-player.css   # 唱片播放器样式
+│   │   └── themes.css         # 主题变量
+│   ├── stories/
+│   │   ├── config.json        # 故事配置（BGM、主题等）
+│   │   ├── story1/
+│   │   │   └── data.json      # 故事1数据（含章节 BGM 触点）
+│   │   ├── story2/
+│   │   │   └── data.json
+│   │   └── story3/
+│   │       └── data.json
+│   └── comments.js            # 评论模块（本地存储）
+├── index.html                 # 书架首页（源码引用 src/）
+├── story.html                 # 统一故事页（源码引用 src/）
+├── vite.config.js             # Vite 配置（多页面入口）
+├── package.json               # 项目依赖
+├── .gitignore                 # Git 忽略规则（node_modules/、dist/）
+├── .github/workflows/
+│   └── deploy.yml             # GitHub Actions 自动构建
+├── DEVLOG.md                  # 本文件（开发日志）
+└── BUILD_GUIDE.md             # 构建指南
+```
+
+---
+
+**日志维护者**：CTRL66666
+**最后更新**：2026-06-30
+**版本**：v1.0.19
