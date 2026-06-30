@@ -639,53 +639,31 @@ async function init() {
     const savedTime = parseFloat(sessionStorage.getItem('bgm_time') || '0');
     const wasPlaying = sessionStorage.getItem('bgm_playing') === 'true';
     const userPaused = window.__bgmUserPaused;
+    const modal = document.getElementById('bgmModal');
+    const modalBtn = document.getElementById('bgmModalBtn');
+    const vinylDisc = document.getElementById('vinylDisc');
 
-    // 统一显示弹窗的函数（只显示一次，避免重复）
-    let modalAlreadyShown = false;
-    const showPlayModal = () => {
-      if (modalAlreadyShown) return;
-      modalAlreadyShown = true;
-      const modal = document.getElementById('bgmModal');
-      const modalBtn = document.getElementById('bgmModalBtn');
-      const vinylDisc = document.getElementById('vinylDisc');
-      if (modal && modal.style.display !== 'flex') {
-        modal.style.display = 'flex';
-      }
-      if (vinylDisc) {
-        vinylDisc.classList.add('hint-pulse');
-      }
-      if (modalBtn && !modalBtn._hasClick) {
-        modalBtn._hasClick = true;
-        modalBtn.onclick = () => {
-          // 点击后立即关闭弹窗，给用户即时反馈
-          if (modal) modal.style.display = 'none';
-          if (vinylDisc) vinylDisc.classList.remove('hint-pulse');
-          // 后台尝试播放（不阻塞 UI）
-          const tryResume = () => {
-            bgm.play().then(() => {
-              window.__bgmPlayed = true;
-              sessionStorage.setItem('bgm_playing', 'true');
-            }).catch(() => {
-              // 播放失败，重新显示弹窗
-              modalAlreadyShown = false;
-              showPlayModal();
-            });
-          };
-          if (bgm.readyState >= 3) {
-            tryResume();
-          } else {
-            bgm.addEventListener('canplay', tryResume, { once: true });
-            // 2秒加载超时
-            setTimeout(() => {
-              if (bgm.paused) {
-                modalAlreadyShown = false;
-                showPlayModal();
-              }
-            }, 2000);
-          }
-        };
-      }
-    };
+    // 弹窗：只显示一次，点击后立即关闭，不等待播放
+    function showPlayModal() {
+      if (window.__bgmModalShown || window.__bgmModalClicked || window.__bgmPlayed) return;
+      window.__bgmModalShown = true;
+      if (modal) modal.style.display = 'flex';
+      if (vinylDisc) vinylDisc.classList.add('hint-pulse');
+    }
+    function hidePlayModal() {
+      if (modal) modal.style.display = 'none';
+      if (vinylDisc) vinylDisc.classList.remove('hint-pulse');
+    }
+    // 弹窗按钮点击：只设置一次
+    if (modalBtn && !modalBtn._onclickSet) {
+      modalBtn._onclickSet = true;
+      modalBtn.onclick = () => {
+        window.__bgmModalClicked = true;
+        hidePlayModal();
+        // 尝试播放，不等待结果
+        bgm.play().catch(() => {});
+      };
+    }
 
     if (savedSrc === storyConfig.bgm) {
       // 同一故事内返回/刷新：恢复进度
@@ -713,47 +691,38 @@ async function init() {
 
     // 尝试自动播放（仅用户未手动暂停时）
     if (!userPaused) {
-      let playTimeout = null;
-      
       const tryPlay = () => {
         bgm.play().then(() => {
-          // 播放成功：清除超时，确保不弹窗
-          if (playTimeout) clearTimeout(playTimeout);
           window.__bgmPlayed = true;
           sessionStorage.setItem('bgm_playing', 'true');
           console.log('自动播放成功');
-        }).catch((err) => {
-          // 播放被阻止：清除超时，显示弹窗
-          if (playTimeout) clearTimeout(playTimeout);
-          console.log('自动播放被阻止:', err.name);
+        }).catch(() => {
+          console.log('自动播放被阻止');
           showPlayModal();
         });
       };
-
-      // 3秒超时兜底：音频加载太慢时显示弹窗
-      playTimeout = setTimeout(() => {
-        // 如果已经播放成功了，不显示弹窗
-        if (window.__bgmPlayed) return;
-        console.log('音频加载超时，显示弹窗');
-        showPlayModal();
-      }, 3000);
 
       // 如果音频已经加载，立即尝试播放
       if (bgm.readyState >= 3) {
         tryPlay();
       } else {
         // 等待音频加载完成
-        bgm.addEventListener('canplay', () => {
-          clearTimeout(playTimeout);
-          tryPlay();
-        }, { once: true });
+        bgm.addEventListener('canplay', tryPlay, { once: true });
       }
 
-      // 音频加载失败也显示弹窗
+      // 3秒兜底：加载太慢直接弹窗
+      setTimeout(() => {
+        if (!window.__bgmPlayed && !window.__bgmModalShown) {
+          console.log('音频加载超时，显示弹窗');
+          showPlayModal();
+        }
+      }, 3000);
+
+      // 加载失败也显示弹窗
       bgm.addEventListener('error', () => {
-        clearTimeout(playTimeout);
-        console.log('音频加载失败，显示弹窗');
-        showPlayModal();
+        if (!window.__bgmPlayed && !window.__bgmModalShown) {
+          showPlayModal();
+        }
       }, { once: true });
     }
   }
@@ -796,7 +765,7 @@ async function init() {
   // 注入版本号
   const versionMark = document.querySelector('.version-mark');
   if (versionMark) {
-    versionMark.textContent = 'v1.0.24';
+    versionMark.textContent = 'v1.0.25';
   }
 }
 
