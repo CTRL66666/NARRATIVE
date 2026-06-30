@@ -805,7 +805,7 @@ async function init() {
   // 注入版本号
   const versionMark = document.querySelector('.version-mark');
   if (versionMark) {
-    versionMark.textContent = 'v1.0.28';
+    versionMark.textContent = 'v1.0.29';
   }
 }
 
