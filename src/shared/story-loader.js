@@ -270,6 +270,7 @@ function crossfadeBgm(bgm, newSrc, duration = 1000) {
   }
   
   // 加载完成，开始 crossfade
+  // 旧音乐淡出 3秒，新音乐在 1.5秒后开始淡入，两者重叠 1.5秒
   function startCrossfade() {
     if (state !== 'loading') return;
     state = 'fading';
@@ -277,62 +278,58 @@ function crossfadeBgm(bgm, newSrc, duration = 1000) {
     hideBgmLoading();
     
     const startTime = performance.now();
+    const FADE_OUT_MS = 3000;   // 旧音乐淡出 3秒
+    const FADE_IN_DELAY = 1500; // 1.5秒后开始新音乐
+    const FADE_IN_MS = 1500;    // 新音乐淡入 1.5秒
     
-    // 第一步：旧音频淡出（duration/2 时间）
-    function fadeOut(now) {
+    let switchedToNew = false;
+    let newAudioLoaded = false;
+    
+    function animate(now) {
       if (state === 'done') return;
       const elapsed = now - startTime;
-      const progress = Math.min(elapsed / (duration / 2), 1);
-      const easeOut = 1 - Math.pow(1 - progress, 2);
-      bgm.volume = Math.max(0, oldVolume * (1 - easeOut));
       
-      if (progress < 1) {
-        animFrameId = requestAnimationFrame(fadeOut);
+      // 旧音乐淡出（3秒，ease-out）
+      const fadeOutProgress = Math.min(elapsed / FADE_OUT_MS, 1);
+      const easeOut = 1 - Math.pow(1 - fadeOutProgress, 2);
+      const oldVol = Math.max(0, oldVolume * (1 - easeOut));
+      
+      // 在 1.5秒时切换到新音频
+      if (!switchedToNew && elapsed >= FADE_IN_DELAY) {
+        switchedToNew = true;
+        // 切换到新音频
+        bgm.pause();
+        bgm.src = newSrc;
+        bgm.load();
+        bgm.volume = 0;
+        bgm.play().then(() => {
+          newAudioLoaded = true;
+        }).catch(() => showToast());
+      }
+      
+      // 如果新音乐已经启动，计算淡入音量
+      if (switchedToNew && newAudioLoaded) {
+        const fadeInElapsed = elapsed - FADE_IN_DELAY;
+        const fadeInProgress = Math.min(fadeInElapsed / FADE_IN_MS, 1);
+        const easeIn = fadeInProgress * fadeInProgress;
+        const newVol = Math.min(oldVolume, easeIn);
+        bgm.volume = newVol;
+      } else if (!switchedToNew) {
+        // 还没切换，继续播放旧音乐
+        bgm.volume = oldVol;
+      }
+      
+      if (fadeOutProgress < 1) {
+        animFrameId = requestAnimationFrame(animate);
       } else {
-        // 旧音频淡出完成，切换到新音频
-        switchToNew();
+        // 3秒完成，旧音乐淡出结束
+        cleanup();
+        window.__bgmPlayed = true;
+        sessionStorage.setItem('bgm_playing', 'true');
       }
     }
     
-    animFrameId = requestAnimationFrame(fadeOut);
-  }
-  
-  // 切换到新音频并淡入
-  function switchToNew() {
-    if (state === 'done') return;
-    
-    // 切换到新音频
-    bgm.pause();
-    bgm.src = newSrc;
-    bgm.load();
-    bgm.volume = 0;
-    
-    // 播放新音频（bgm 是用户交互元素，play() 更可靠）
-    bgm.play().then(() => {
-      // 新音频淡入（duration/2 时间）
-      const fadeInStart = performance.now();
-      
-      function fadeIn(now) {
-        if (state === 'done') return;
-        const elapsed = now - fadeInStart;
-        const progress = Math.min(elapsed / (duration / 2), 1);
-        const easeIn = progress * progress;
-        bgm.volume = Math.min(oldVolume, easeIn);
-        
-        if (progress < 1) {
-          animFrameId = requestAnimationFrame(fadeIn);
-        } else {
-          cleanup();
-          window.__bgmPlayed = true;
-          sessionStorage.setItem('bgm_playing', 'true');
-        }
-      }
-      
-      animFrameId = requestAnimationFrame(fadeIn);
-    }).catch(() => {
-      cleanup();
-      showToast();
-    });
+    animFrameId = requestAnimationFrame(animate);
   }
   
   // 错误处理：直接切换
@@ -764,7 +761,7 @@ async function init() {
   // 注入版本号
   const versionMark = document.querySelector('.version-mark');
   if (versionMark) {
-    versionMark.textContent = 'v1.0.31';
+    versionMark.textContent = 'v1.0.32';
   }
 }
 
