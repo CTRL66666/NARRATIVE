@@ -2,15 +2,15 @@
   "stories": [
     {
       "id": "story1",
-      "title": "长安夜雨",
-      "author": "墨染青衣",
-      "tag": "古风",
+      "title": "骤雨难歇",
+      "author": "2026 6 30 著",
+      "tag": "拾遗",
       "theme": "ancient",
       "bgm": "https://cdn.jsdelivr.net/gh/CTRL66666/NARRATIVE@main/public/audio/见字如面.mp3",
       "bgmLabel": "见字如面",
       "backgroundEffect": "rain",
       "volume": "卷一",
-      "summary": "长安城里，一场夜雨，洗尽千年繁华。一个书生，一把纸伞，一段不该被遗忘的往事……",
+      "summary": "一度以为只是一场忽如其来的暴雨，很久之后回觉永远没有天晴。",
       "nextStory": "story2"
     },
     {
