@@ -242,9 +242,8 @@ function crossfadeBgm(bgm, newSrc, duration = 1000, waitForLoad = false) {
   showBgmLoading('🎵 音乐加载中...');
   
   const newAudio = new Audio();
-  // 关键优化：preload="metadata" 只加载文件头，比 "auto" 快得多
-  // 然后 play() 会让浏览器边下载边播放（流式播放）
-  newAudio.preload = 'metadata';
+  newAudio.crossOrigin = 'anonymous';
+  newAudio.preload = 'auto';
   newAudio.src = newSrc;
   newAudio.volume = 0;
   
@@ -262,33 +261,35 @@ function crossfadeBgm(bgm, newSrc, duration = 1000, waitForLoad = false) {
     hideBgmLoading();
   }
   
-  function showPlayModal() {
-    const modal = document.getElementById('bgmModal');
-    const modalBtn = document.getElementById('bgmModalBtn');
+  function showToast() {
+    if (window.__bgmToastShown || window.__bgmPlayed) return;
+    window.__bgmToastShown = true;
+    const toast = document.getElementById('bgmToast');
+    if (toast) {
+      toast.style.display = 'block';
+      requestAnimationFrame(() => { toast.style.opacity = '1'; });
+    }
     const vinylDisc = document.getElementById('vinylDisc');
-    if (modal && modal.style.display !== 'flex') {
-      modal.style.display = 'flex';
-    }
     if (vinylDisc) vinylDisc.classList.add('hint-pulse');
-    if (modalBtn && !modalBtn._hasClick) {
-      modalBtn._hasClick = true;
-      modalBtn.onclick = () => {
-        bgm.load();
-        bgm.play().then(() => {
-          window.__bgmPlayed = true;
-          sessionStorage.setItem('bgm_playing', 'true');
-          if (modal) modal.style.display = 'none';
-          if (vinylDisc) vinylDisc.classList.remove('hint-pulse');
-        }).catch(() => {});
-      };
+  }
+  
+  function hideToast() {
+    const toast = document.getElementById('bgmToast');
+    if (toast) {
+      toast.style.opacity = '0';
+      setTimeout(() => { toast.style.display = 'none'; }, 300);
     }
+    const vinylDisc = document.getElementById('vinylDisc');
+    if (vinylDisc) vinylDisc.classList.remove('hint-pulse');
   }
   
   // 真正的 crossfade 开始：新旧音乐同时开始过渡
   function startCrossfade() {
     if (crossfadeStarted || finished) return;
     crossfadeStarted = true;
-    finished = true; // 防止超时回调再执行
+    
+    // BUG 已修复：不再在这里设置 finished = true
+    // finished 应该只在 finishTransition 或 cleanup 中设置
     
     hideBgmLoading();
     
@@ -328,7 +329,7 @@ function crossfadeBgm(bgm, newSrc, duration = 1000, waitForLoad = false) {
       bgm.load();
       bgm.currentTime = currentTime;
       bgm.volume = 1;
-      bgm.play().catch(() => showPlayModal());
+      bgm.play().catch(() => showToast());
       
       // 清理临时音频
       newAudio.pause();
@@ -350,38 +351,40 @@ function crossfadeBgm(bgm, newSrc, duration = 1000, waitForLoad = false) {
     bgm.src = newSrc;
     bgm.load();
     bgm.volume = 1;
-    bgm.play().catch(() => showPlayModal());
+    bgm.play().catch(() => showToast());
   }, { once: true });
   
-  // 关键优化：用 canplay 而不是 canplaythrough
-  // canplay: 浏览器认为可以开始播放（通常只需要下载一小部分）
-  // canplaythrough: 浏览器认为可以完整播放（可能需要下载更多）
-  newAudio.addEventListener('canplay', startCrossfade, { once: true });
+  // 用 readyState 轮询替代 canplay 事件（更可靠，避免事件不触发）
+  let loadPollCount = 0;
+  const loadPoll = setInterval(() => {
+    loadPollCount++;
+    if (newAudio.readyState >= 2) {
+      clearInterval(loadPoll);
+      startCrossfade();
+      return;
+    }
+    // 8秒超时
+    if (loadPollCount > 80) {
+      clearInterval(loadPoll);
+      if (!crossfadeStarted && !finished) {
+        console.log('BGM 加载超时，直接切换:', newSrc);
+        cleanup();
+        bgm.src = newSrc;
+        bgm.load();
+        bgm.volume = 1;
+        bgm.play().catch(() => showToast());
+      }
+    }
+  }, 100);
   
-  // 如果新音频已经预加载完成，直接开始
-  if (__bgmPreloadState[newSrc] === 'loaded') {
+  // 如果已缓存，readyState 可能已经满足
+  if (newAudio.readyState >= 2) {
+    clearInterval(loadPoll);
     startCrossfade();
   }
   
-  // 加载失败兜底（waitForLoad 时用较长超时，翻页时用较短超时）
-  const timeout = waitForLoad ? 8000 : 3000;
-  setTimeout(() => {
-    if (crossfadeStarted || finished) return;
-    console.log('BGM 加载超时，直接切换:', newSrc);
-    cleanup();
-    bgm.src = newSrc;
-    bgm.load();
-    bgm.volume = 1;
-    bgm.play().catch(() => showPlayModal());
-  }, timeout);
-  
-  // 开始加载（流式播放）
+  // 开始加载
   newAudio.load();
-  
-  // 如果音频已经加载好了（从缓存），直接开始播放
-  if (newAudio.readyState >= 2) {
-    newAudio.play().catch(() => {});
-  }
 }
 
 // 章节 BGM 触点处理：切换章节时检查是否需要过渡音乐
@@ -639,62 +642,38 @@ async function init() {
     const savedTime = parseFloat(sessionStorage.getItem('bgm_time') || '0');
     const wasPlaying = sessionStorage.getItem('bgm_playing') === 'true';
     const userPaused = window.__bgmUserPaused;
-    const modal = document.getElementById('bgmModal');
-    const modalBtn = document.getElementById('bgmModalBtn');
     const vinylDisc = document.getElementById('vinylDisc');
 
-    // 弹窗：只显示一次，点击后立即关闭，不等待播放
-    function showPlayModal() {
-      if (window.__bgmModalShown || window.__bgmModalClicked || window.__bgmPlayed) return;
-      window.__bgmModalShown = true;
-      if (modal) modal.style.display = 'flex';
+    // Toast 提示：自动播放失败时显示底部非阻塞提示
+    function showToast() {
+      if (window.__bgmToastShown || window.__bgmPlayed) return;
+      window.__bgmToastShown = true;
+      const toast = document.getElementById('bgmToast');
+      if (toast) {
+        toast.style.display = 'block';
+        requestAnimationFrame(() => { toast.style.opacity = '1'; });
+      }
       if (vinylDisc) vinylDisc.classList.add('hint-pulse');
     }
-    function hidePlayModal() {
-      if (modal) modal.style.display = 'none';
+    function hideToast() {
+      const toast = document.getElementById('bgmToast');
+      if (toast) {
+        toast.style.opacity = '0';
+        setTimeout(() => { toast.style.display = 'none'; }, 300);
+      }
       if (vinylDisc) vinylDisc.classList.remove('hint-pulse');
     }
-    // 弹窗按钮点击：只设置一次
-    if (modalBtn && !modalBtn._onclickSet) {
-      modalBtn._onclickSet = true;
-      modalBtn.onclick = () => {
-        window.__bgmModalClicked = true;
 
-        // 直接尝试播放
-        const doPlay = () => {
-          bgm.play().then(() => {
-            window.__bgmPlayed = true;
-            sessionStorage.setItem('bgm_playing', 'true');
-          }).catch(() => {});
-        };
-
-        // 如果已加载：直接播放并关闭弹窗
-        if (bgm.readyState >= 2) {
-          hidePlayModal();
-          doPlay();
-          return;
-        }
-
-        // 还没加载好：显示加载中，轮询 readyState
-        showBgmLoading('🎵 音乐加载中...');
-        let pollCount = 0;
-        const poll = setInterval(() => {
-          pollCount++;
-          if (bgm.readyState >= 2) {
-            clearInterval(poll);
-            hideBgmLoading();
-            hidePlayModal();
-            doPlay();
-            return;
-          }
-          // 10秒超时（100ms * 100 = 10秒）
-          if (pollCount > 100) {
-            clearInterval(poll);
-            hideBgmLoading();
-            bgm.load();
-            doPlay();
-          }
-        }, 100);
+    // Toast 点击：尝试播放
+    const toast = document.getElementById('bgmToast');
+    if (toast && !toast._onclickSet) {
+      toast._onclickSet = true;
+      toast.onclick = () => {
+        hideToast();
+        bgm.play().then(() => {
+          window.__bgmPlayed = true;
+          sessionStorage.setItem('bgm_playing', 'true');
+        }).catch(() => showToast());
       };
     }
 
@@ -708,7 +687,7 @@ async function init() {
       // 恢复播放时间
       if (wasPlaying && !userPaused) {
         bgm.currentTime = savedTime;
-        bgm.play().catch(() => showPlayModal());
+        bgm.play().catch(() => showToast());
       }
     } else {
       // 换了故事：从头开始，清除旧进度
@@ -731,7 +710,7 @@ async function init() {
           console.log('自动播放成功');
         }).catch(() => {
           console.log('自动播放被阻止');
-          showPlayModal();
+          showToast();
         });
       };
 
@@ -752,7 +731,7 @@ async function init() {
           if (pollCount > 30) {
             clearInterval(poll);
             if (!window.__bgmPlayed && !window.__bgmModalShown) {
-              showPlayModal();
+              showToast();
             }
           }
         }, 100);
@@ -761,7 +740,7 @@ async function init() {
       // 加载失败也显示弹窗
       bgm.addEventListener('error', () => {
         if (!window.__bgmPlayed && !window.__bgmModalShown) {
-          showPlayModal();
+          showToast();
         }
       }, { once: true });
     }
@@ -805,7 +784,7 @@ async function init() {
   // 注入版本号
   const versionMark = document.querySelector('.version-mark');
   if (versionMark) {
-    versionMark.textContent = 'v1.0.29';
+    versionMark.textContent = 'v1.0.30';
   }
 }
 
