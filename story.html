@@ -28,12 +28,13 @@
   </div>
   <audio id="bgm" loop preload="auto"></audio>
   <script>
-  // BGM 预加载：在 JS 模块加载前给 audio 设置 src，让浏览器立即开始下载
+  // BGM 预加载：在 JS 模块加载前预加载所有 BGM，确保切换时秒开
   (function() {
     var p = new URLSearchParams(location.search);
     var id = p.get('id');
     var ch = parseInt(p.get('ch')) || 0;
     if (!id) return;
+    
     var BGM_MAP = {
       'story1': {
         'default': 'https://cdn.jsdelivr.net/gh/CTRL66666/NARRATIVE@main/public/audio/见字如面.mp3',
@@ -42,14 +43,38 @@
       'story2': { 'default': 'https://cdn.jsdelivr.net/gh/CTRL66666/NARRATIVE@main/public/audio/见字如面.mp3' },
       'story3': { 'default': 'https://cdn.jsdelivr.net/gh/CTRL66666/NARRATIVE@main/public/audio/见字如面.mp3' }
     };
+    
     var story = BGM_MAP[id];
     if (!story) return;
-    var url = (story.chapters && story.chapters[ch]) || story.default;
-    if (!url) return;
-    var bgm = document.getElementById('bgm');
-    if (bgm) {
-      bgm.src = url;
-      bgm.load();
+    
+    // 收集所有 BGM URL（去重）
+    var urls = [];
+    if (story.default) urls.push(story.default);
+    if (story.chapters) {
+      Object.keys(story.chapters).forEach(function(k) {
+        if (urls.indexOf(story.chapters[k]) === -1) {
+          urls.push(story.chapters[k]);
+        }
+      });
+    }
+    
+    // 预加载所有 BGM（后台静默加载）
+    urls.forEach(function(url) {
+      var a = new Audio();
+      a.crossOrigin = 'anonymous';
+      a.preload = 'auto';
+      a.src = url;
+      a.load();
+    });
+    
+    // 同时给主 audio 设置当前章节的 BGM
+    var currentUrl = (story.chapters && story.chapters[ch]) || story.default;
+    if (currentUrl) {
+      var bgm = document.getElementById('bgm');
+      if (bgm) {
+        bgm.src = currentUrl;
+        bgm.load();
+      }
     }
   })();
   </script>
