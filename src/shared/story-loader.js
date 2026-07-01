@@ -204,6 +204,29 @@ function preloadNextChapterBgm(data, currentIndex) {
   }
 }
 
+// 等待音频缓冲至少 minSeconds 秒，超时也返回（避免无限等待）
+// 兼容性最好：所有浏览器都支持 audio.buffered API
+function waitForBuffer(audio, minSeconds = 10, timeout = 10000) {
+  return new Promise((resolve) => {
+    const startTime = Date.now();
+    const check = () => {
+      if (audio.buffered.length > 0) {
+        const buffered = audio.buffered.end(0) - audio.currentTime;
+        if (buffered >= minSeconds) {
+          resolve(true);
+          return;
+        }
+      }
+      if (Date.now() - startTime > timeout) {
+        resolve(false); // 超时，但继续播放（可能缓冲不够）
+        return;
+      }
+      setTimeout(check, 200);
+    };
+    check();
+  });
+}
+
 // 显示/隐藏唱片加载状态
 function setVinylLoading(isLoading) {
   const disc = document.getElementById('vinylDisc');
@@ -342,26 +365,12 @@ function crossfadeBgm(bgm, newSrc, duration = 1000) {
     bgm.play().catch(() => showToast());
   }, { once: true });
   
-  // 轮询加载状态（readyState >= 2 表示可以开始播放）
-  let pollCount = 0;
-  const poll = setInterval(() => {
-    pollCount++;
-    if (newAudio.readyState >= 2) {
-      clearInterval(poll);
-      startCrossfade();
-      return;
-    }
-    // 8秒超时：即使没加载完也执行 crossfade（bgm.play() 会等待）
-    if (pollCount > 80) {
-      clearInterval(poll);
-      if (state === 'loading') {
-        startCrossfade();
-      }
-    }
-  }, 100);
-  
-  // 开始加载
-  newAudio.load();
+  // 等待新音频缓冲至少 5 秒再开始 crossfade（避免前几秒断断续续）
+  // 同时 8 秒超时兜底
+  waitForBuffer(newAudio, 5, 8000).then((ok) => {
+    if (state !== 'loading') return;
+    startCrossfade();
+  });
 }
 
 // 章节 BGM 触点处理：切换章节时检查是否需要过渡音乐
@@ -645,8 +654,11 @@ async function init() {
     const toast = document.getElementById('bgmToast');
     if (toast && !toast._onclickSet) {
       toast._onclickSet = true;
-      toast.onclick = () => {
+      toast.onclick = async () => {
         hideToast();
+        showBgmLoading('🎵 音乐缓冲中...');
+        const ok = await waitForBuffer(bgm, 5, 5000);
+        hideBgmLoading();
         bgm.play().then(() => {
           window.__bgmPlayed = true;
           sessionStorage.setItem('bgm_playing', 'true');
@@ -664,7 +676,12 @@ async function init() {
       // 恢复播放时间
       if (wasPlaying && !userPaused) {
         bgm.currentTime = savedTime;
-        bgm.play().catch(() => showToast());
+        (async () => {
+          showBgmLoading('🎵 音乐缓冲中...');
+          await waitForBuffer(bgm, 10, 5000);
+          hideBgmLoading();
+          bgm.play().catch(() => showToast());
+        })();
       }
     } else {
       // 换了故事：从头开始，清除旧进度
@@ -680,7 +697,10 @@ async function init() {
 
     // 尝试自动播放（仅用户未手动暂停时）
     if (!userPaused) {
-      const tryPlay = () => {
+      const doPlay = async () => {
+        showBgmLoading('🎵 音乐缓冲中...');
+        const ok = await waitForBuffer(bgm, 10, 8000);
+        hideBgmLoading();
         bgm.play().then(() => {
           window.__bgmPlayed = true;
           sessionStorage.setItem('bgm_playing', 'true');
@@ -691,21 +711,21 @@ async function init() {
         });
       };
 
-      // 如果已加载，直接尝试播放
+      // 如果已加载，等待缓冲后播放
       if (bgm.readyState >= 3) {
-        tryPlay();
+        doPlay();
       } else {
-        // 轮询 readyState，加载好后自动播放
+        // 轮询 readyState，加载好后等待缓冲再播放
         let pollCount = 0;
-        const poll = setInterval(() => {
+        const poll = setInterval(async () => {
           pollCount++;
           if (bgm.readyState >= 3) {
             clearInterval(poll);
-            tryPlay();
+            doPlay();
             return;
           }
-          // 3秒超时：直接弹窗
-          if (pollCount > 30) {
+          // 5秒超时：直接弹窗
+          if (pollCount > 50) {
             clearInterval(poll);
             if (!window.__bgmPlayed && !window.__bgmModalShown) {
               showToast();
@@ -761,7 +781,7 @@ async function init() {
   // 注入版本号
   const versionMark = document.querySelector('.version-mark');
   if (versionMark) {
-    versionMark.textContent = 'v1.0.35';
+    versionMark.textContent = 'v1.0.36';
   }
 }
 
